@@ -1,0 +1,54 @@
+services:
+  gateway:
+    build: ./services/gateway
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./services/gateway/src:/app/src
+    environment:
+      - USER_SERVICE_URL=http://user-service:8000
+      - INVESTMENT_SERVICE_URL=http://investment-service:8000
+
+  user-service:
+    build: ./services/user-service
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./services/user-service/src:/app/src
+    environment:
+      - DATABASE_URL=postgresql://user:password@user-db/userdb
+    depends_on:
+      - user-db
+
+  investment-service:
+    build: ./services/investment-service
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./services/investment-service/src:/app/src
+    environment:
+      - DATABASE_URL=postgresql://user:password@investment-db/investmentdb
+    depends_on:
+      - investment-db
+
+  user-db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: userdb
+    volumes:
+      - user_data:/var/lib/postgresql/data
+
+  investment-db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: investmentdb
+    volumes:
+      - investment_data:/var/lib/postgresql/data
+
+volumes:
+  user_data:
+  investment_data:
