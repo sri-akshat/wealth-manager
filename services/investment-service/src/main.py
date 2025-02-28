@@ -1,22 +1,120 @@
+# src/main.py
 from fastapi import FastAPI, Depends, HTTPException, Header
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from .core.database import get_db, engine
-from .models.investment import Base, MutualFund, Investment, InvestmentStatus, FundCategory
+from datetime import datetime
+from .core.database import get_db, engine, Base
+from .core.config import settings
+from .models.investment import MutualFund, Investment, InvestmentStatus, FundCategory
 from .schemas.investment import (
     MutualFundCreate,
     MutualFundResponse,
     InvestmentCreate,
     InvestmentResponse,
-    PortfolioSummary
+    PortfolioSummary,
+    PortfolioInvestment,
+    PortfolioAnalytics
 )
-import jwt
-from datetime import datetime
+from jose import jwt, JWTError
 
-# Create tables
-Base.metadata.create_all(bind=engine)
+# Create tables if not in test mode
+if not settings.TEST_MODE:
+    Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Investment Service")
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION
+)
+
+security = HTTPBearer()
+
+async def get_current_user_id(
+        credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> str:
+    """
+    Validate JWT token and extract user_id.
+    Now uses FastAPI's built-in security utilities.
+    """
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid user credentials"
+            )
+        return user_id
+    except JWTError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+@app.get("/portfolio/summary", response_model=PortfolioSummary)
+async def get_portfolio_summary(
+        db: Session = Depends(get_db),
+        user_email: str = Depends(get_current_user_id)
+):
+    """
+    Get summary of user's investment portfolio.
+    """
+    try:
+        user_id = hash(user_email)
+        investments = db.query(Investment).filter(
+            Investment.user_id == user_id
+        ).join(
+            Investment.fund
+        ).all()
+
+        if not investments:
+            return PortfolioSummary(
+                total_investment=0,
+                current_value=0,
+                total_returns=0,
+                returns_percentage=0,
+                number_of_investments=0,
+                asset_allocation={}
+            )
+
+        total_investment = sum(inv.purchase_amount for inv in investments)
+        current_value = sum(inv.current_value for inv in investments)
+        total_returns = current_value - total_investment
+        returns_percentage = (total_returns / total_investment * 100) if total_investment > 0 else 0
+
+        allocation = {}
+        for inv in investments:
+            category = inv.fund.category.value
+            allocation[category] = allocation.get(category, 0) + inv.current_value
+
+        total_value = sum(allocation.values())
+        asset_allocation = {
+            category: (value / total_value * 100)
+            for category, value in allocation.items()
+        }
+
+        return PortfolioSummary(
+            total_investment=total_investment,
+            current_value=current_value,
+            total_returns=total_returns,
+            returns_percentage=returns_percentage,
+            number_of_investments=len(investments),
+            asset_allocation=asset_allocation
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while fetching portfolio summary"
+        )
 
 # Add sample data function
 def add_sample_funds(db: Session):
@@ -66,16 +164,6 @@ async def initialize_data(db: Session = Depends(get_db)):
     add_sample_funds(db)
     return {"message": "Sample data initialized"}
 
-async def get_current_user_id(authorization: str = Header(...)) -> str:
-    try:
-        token = authorization.split(" ")[1]
-        payload = jwt.decode(token, "your-secret-key-here", algorithms=["HS256"])
-        return payload.get("sub")  # This will return the email
-    except:
-        raise HTTPException(status_code=401, detail="Invalid authentication token")
-
-# ... (rest of the endpoints remain the same)
-
 @app.post("/investments", response_model=InvestmentResponse)
 async def create_investment(
         investment: InvestmentCreate,
@@ -102,3 +190,62 @@ async def create_investment(
     db.commit()
     db.refresh(db_investment)
     return db_investment
+
+@app.get("/portfolio/investments", response_model=List[PortfolioInvestment])
+async def get_portfolio_investments(
+        db: Session = Depends(get_db),
+        user_email: str = Depends(get_current_user_id)
+):
+    """Get detailed list of user's investments"""
+    user_id = hash(user_email)
+    investments = Investment.get_user_portfolio(db, user_id)
+
+    result = []
+    for inv in investments:
+        returns, returns_percentage = inv.calculate_returns()
+        result.append(PortfolioInvestment(
+            id=inv.id,
+            fund_name=inv.fund.scheme_name,
+            category=inv.fund.category,
+            units=inv.units,
+            purchase_nav=inv.purchase_nav,
+            current_nav=inv.current_nav,
+            purchase_amount=inv.purchase_amount,
+            current_value=inv.current_value,
+            returns=returns,
+            returns_percentage=returns_percentage,
+            purchase_date=inv.purchase_date
+        ))
+
+    return result
+
+@app.get("/portfolio/analytics", response_model=PortfolioAnalytics)
+async def get_portfolio_analytics(
+        db: Session = Depends(get_db),
+        user_email: str = Depends(get_current_user_id)
+):
+    """Get comprehensive portfolio analytics including summary and investments"""
+    summary = await get_portfolio_summary(db, user_email)
+    investments = await get_portfolio_investments(db, user_email)
+
+    return PortfolioAnalytics(
+        summary=summary,
+        investments=investments
+    )
+
+# Add this utility endpoint to update NAVs (you'll need this for accurate portfolio values)
+@app.post("/investments/update-navs")
+async def update_investment_navs(
+        db: Session = Depends(get_db),
+        user_email: str = Depends(get_current_user_id)
+):
+    """Update current NAVs and values for all investments"""
+    user_id = hash(user_email)
+    investments = Investment.get_user_portfolio(db, user_id)
+
+    for investment in investments:
+        # In a real implementation, you'd fetch the latest NAV from an external API
+        investment.update_current_value()
+
+    db.commit()
+    return {"message": "Investment values updated successfully"}
