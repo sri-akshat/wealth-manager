@@ -29,6 +29,13 @@ jobs:
           # Find and install every requirements.txt in the repo
           find . -name "requirements.txt" -exec pip install -r {} \;
 
-      - name: Run tests
+      - name: Run Tests with Coverage
         run: |
-          pytest --maxfail=1 --disable-warnings -q
+          # Adjust the --cov flag to point to your source directory if needed
+          pytest --maxfail=1 --disable-warnings --cov=. --cov-report=xml
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          # The default behavior picks up the coverage.xml file from the repo root
+          files: coverage.xml
