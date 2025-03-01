@@ -1,22 +1,20 @@
 # src/main.py
-from fastapi import FastAPI, Depends, HTTPException, Header
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from typing import List
+
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional
-from datetime import datetime
-from .core.database import get_db, engine, Base
+
+from .core.auth import get_current_user_id
 from .core.config import settings
+from .core.database import get_db, engine, Base
 from .models.investment import MutualFund, Investment, InvestmentStatus, FundCategory
 from .schemas.investment import (
-    MutualFundCreate,
-    MutualFundResponse,
     InvestmentCreate,
     InvestmentResponse,
     PortfolioSummary,
     PortfolioInvestment,
     PortfolioAnalytics
 )
-from jose import jwt, JWTError
 
 # Create tables if not in test mode
 if not settings.TEST_MODE:
@@ -26,38 +24,6 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION
 )
-
-security = HTTPBearer()
-
-async def get_current_user_id(
-        credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> str:
-    """
-    Validate JWT token and extract user_id.
-    Now uses FastAPI's built-in security utilities.
-    """
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
-        user_id = payload.get("sub")
-        if not user_id:
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid user credentials"
-            )
-        return user_id
-    except JWTError:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    except Exception:
-        raise HTTPException(
-            status_code=401,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
 
 @app.get("/portfolio/summary", response_model=PortfolioSummary)
 async def get_portfolio_summary(

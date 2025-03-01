@@ -1,12 +1,39 @@
 # tests/integration/test_endpoints.py
-import pytest
-from fastapi.testclient import TestClient
 
 def test_unauthorized_access(client):
     """Test access without any authorization header"""
     response = client.get("/portfolio/summary")
     assert response.status_code == 401
     assert response.json()["detail"] == "Not authenticated"
+    assert "WWW-Authenticate" in response.headers
+    assert response.headers["WWW-Authenticate"] == "Bearer"
+
+def test_invalid_auth_header_format(client):
+    """Test access with invalid authorization header format"""
+    response = client.get(
+        "/portfolio/summary",
+        headers={"Authorization": "InvalidFormat"}
+    )
+    assert response.status_code == 401
+    assert "WWW-Authenticate" in response.headers
+
+def test_invalid_token(client):
+    """Test access with invalid token"""
+    response = client.get(
+        "/portfolio/summary",
+        headers={"Authorization": "Bearer invalid.token.here"}
+    )
+    assert response.status_code == 401
+    assert "WWW-Authenticate" in response.headers
+
+def test_missing_bearer(client):
+    """Test access with token but missing Bearer prefix"""
+    response = client.get(
+        "/portfolio/summary",
+        headers={"Authorization": "some.token.here"}
+    )
+    assert response.status_code == 401
+    assert "WWW-Authenticate" in response.headers
 
 def test_investment_not_found(client, test_user_token):
     """Test attempting to create investment with non-existent fund"""

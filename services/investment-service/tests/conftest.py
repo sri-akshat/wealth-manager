@@ -5,12 +5,18 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import Engine
-from datetime import datetime
+from datetime import datetime, timedelta
+
 import pathlib
 from jose import jwt
 
+from core.config import settings
+
 # Set test mode before importing anything else
 os.environ["TEST_MODE"] = "True"
+import sys
+BASE_DIR = pathlib.Path(__file__).resolve().parent.parent
+sys.path.append(str(BASE_DIR / "src"))
 
 # Import after setting TEST_MODE
 from src.main import app
@@ -87,11 +93,11 @@ def test_user_token():
     """Create a valid JWT token for testing"""
     payload = {
         "sub": "test@example.com",
-        "exp": datetime.utcnow().timestamp() + 3600  # 1 hour expiry
+        "exp": datetime.utcnow() + timedelta(hours=1) # 1 hour expiry
     }
     token = jwt.encode(
         payload,
-        "your-secret-key-here",  # Match this with your settings.JWT_SECRET_KEY
+        settings.JWT_SECRET_KEY,  # Match this with your settings.JWT_SECRET_KEY
         algorithm="HS256"
     )
     return f"Bearer {token}"
