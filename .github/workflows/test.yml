@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      PYTHONPATH: ${{ github.workspace }}
+      PYTHONPATH: ${{ github.workspace }}/services/investment-service/src
     strategy:
       matrix:
         python-version: [3.12]  # Adjust versions as needed
