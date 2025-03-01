@@ -1,0 +1,9 @@
+# requirements-all.txt
+-r services/investment-service/requirements.txt
+-r services/user-service/requirements.txt
+-r services/admin-service/requirements.txt
+-r services/kyc-service/requirements.txt
+-r services/notification-service/requirements.txt
+-r services/transaction-service/requirements.txt
+-r services/gateway/requirements.txt
+# Add more as necessary

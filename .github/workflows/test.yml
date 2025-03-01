@@ -24,11 +24,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
+      - name: Install Dependencies Recursively
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest httpx
+          # Find and install every requirements.txt in the repo
+          find . -name "requirements.txt" -exec pip install -r {} \;
 
       - name: Run tests
         run: |
