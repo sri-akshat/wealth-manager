@@ -19,6 +19,7 @@ Clone the repository and install the dependencies:
 ```bash
 git clone https://github.com/sri-akshat/wealth-manager.git
 cd wealth-manager
+./project-setup.sh
 find . -name "requirements.txt" -exec pip install -r {} \;
 ```
 

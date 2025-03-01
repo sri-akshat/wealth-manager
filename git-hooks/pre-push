@@ -1,0 +1,21 @@
+   #!/bin/bash
+   # Pre-push hook to ensure tests pass before pushing to main
+
+   while read local_ref local_sha remote_ref remote_sha; do
+       # Check if the remote ref is main
+       if [[ "$remote_ref" =~ .*/main$ ]]; then
+           echo "Detected push to main branch. Running tests..."
+   
+           # Run your test suite (customize this command as needed)
+           pytest --maxfail=1 --disable-warnings --exitfirst
+           RESULT=$?
+           
+           if [ $RESULT -ne 0 ]; then
+               echo "Tests failed. Aborting push to main branch."
+               exit 1
+           fi
+           echo "Tests passed. Proceeding with push."
+       fi
+   done
+   
+   exit 0
