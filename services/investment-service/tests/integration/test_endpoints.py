@@ -14,7 +14,7 @@ def test_invalid_auth_header_format(client):
         "/portfolio/summary",
         headers={"Authorization": "InvalidFormat"}
     )
-    assert response.status_code == 409
+    assert response.status_code == 401
     assert "WWW-Authenticate" in response.headers
 
 def test_invalid_token(client):
