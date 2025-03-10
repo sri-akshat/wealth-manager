@@ -1,0 +1,71 @@
+openapi: 3.0.0
+info:
+  title: User Service
+  version: 1.0.0
+  description: User management service for wealth manager platform. Handles user registration,
+    authentication, and profile management.
+paths:
+  /user/health:
+    get:
+      summary: health_check
+      description: "Check if the service is healthy.\n    \n    Returns a simple status\
+        \ message indicating the service is operational."
+      tags:
+      - system
+      responses:
+        '200':
+          description: Successful Response
+  /user/users:
+    post:
+      summary: create_user
+      description: "Register a new user.\n    \n    Args:\n        user: User details\
+        \ including email, password, full name, and role\n        \n    Returns:\n\
+        \        The created user without sensitive information\n        \n    Raises:\n\
+        \        400: If the email is already registered"
+      tags:
+      - users
+      responses:
+        '200':
+          description: Successful Response
+    get:
+      summary: read_users
+      description: "Get a list of all users (admin only).\n    \n    Args:\n     \
+        \   skip: Number of records to skip for pagination\n        limit: Maximum\
+        \ number of records to return\n        \n    Returns:\n        List of user\
+        \ profiles\n        \n    Raises:\n        401: If the token is invalid\n\
+        \        403: If the user is not an admin"
+      tags:
+      - users
+      responses:
+        '200':
+          description: Successful Response
+  /user/token:
+    post:
+      summary: login
+      description: "Authenticate a user and return an access token.\n    \n    Args:\n\
+        \        form_data: OAuth2 form with username (email) and password\n     \
+        \   \n    Returns:\n        JWT access token with type\n        \n    Raises:\n\
+        \        401: If credentials are invalid"
+      tags:
+      - auth
+      responses:
+        '200':
+          description: Successful Response
+  /user/users/me:
+    get:
+      summary: read_users_me
+      description: "Get the current authenticated user's profile.\n    \n    Returns\
+        \ the profile information of the currently logged-in user.\n    \n    Raises:\n\
+        \        401: If the token is invalid\n        404: If user not found"
+      tags:
+      - users
+      responses:
+        '200':
+          description: Successful Response
+tags:
+- name: users
+  description: Operations with users and profiles
+- name: auth
+  description: Authentication operations
+- name: system
+  description: System maintenance operations

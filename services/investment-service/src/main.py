@@ -22,16 +22,45 @@ if not settings.TEST_MODE:
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    version=settings.VERSION
+    description="Investment service API for wealth manager platform. Manages mutual fund investments and portfolio analytics.",
+    version=settings.VERSION,
+    contact={
+        "name": "Wealth Manager Team",
+        "url": "https://github.com/sri-akshat/wealth-manager",
+    },
+    license_info={
+        "name": "Private",
+    },
+    openapi_tags=[
+        {
+            "name": "portfolio",
+            "description": "Operations related to investment portfolios",
+        },
+        {
+            "name": "investments",
+            "description": "Operations for managing individual investments",
+        },
+        {
+            "name": "system",
+            "description": "System maintenance operations",
+        },
+    ]
 )
 
-@app.get("/portfolio/summary", response_model=PortfolioSummary)
+@app.get("/portfolio/summary", response_model=PortfolioSummary, tags=["portfolio"])
 async def get_portfolio_summary(
         db: Session = Depends(get_db),
         user_email: str = Depends(get_current_user_id)
 ):
     """
     Get summary of user's investment portfolio.
+    
+    Returns:
+    - Total investment amount
+    - Current portfolio value
+    - Total returns (absolute and percentage)
+    - Number of investments
+    - Asset allocation by fund category
     """
     try:
         user_id = hash(user_email)
@@ -125,17 +154,35 @@ def add_sample_funds(db: Session):
     db.commit()
 
 # Add endpoint to initialize sample data
-@app.post("/initialize-sample-data")
+@app.post("/initialize-sample-data", tags=["system"])
 async def initialize_data(db: Session = Depends(get_db)):
+    """
+    Initialize sample mutual fund data for testing.
+    
+    This endpoint adds a set of predefined mutual funds to the database
+    if they don't already exist.
+    """
     add_sample_funds(db)
     return {"message": "Sample data initialized"}
 
-@app.post("/investments", response_model=InvestmentResponse)
+@app.post("/investments", response_model=InvestmentResponse, tags=["investments"])
 async def create_investment(
         investment: InvestmentCreate,
         db: Session = Depends(get_db),
         user_email: str = Depends(get_current_user_id)
 ):
+    """
+    Create a new investment for the current user.
+    
+    Args:
+        investment: Investment details including fund_id and purchase amount
+        
+    Returns:
+        The created investment with all details
+        
+    Raises:
+        404: If the specified fund is not found
+    """
     fund = db.query(MutualFund).filter(MutualFund.id == investment.fund_id).first()
     if not fund:
         raise HTTPException(status_code=404, detail="Fund not found")
@@ -157,12 +204,17 @@ async def create_investment(
     db.refresh(db_investment)
     return db_investment
 
-@app.get("/portfolio/investments", response_model=List[PortfolioInvestment])
+@app.get("/portfolio/investments", response_model=List[PortfolioInvestment], tags=["portfolio"])
 async def get_portfolio_investments(
         db: Session = Depends(get_db),
         user_email: str = Depends(get_current_user_id)
 ):
-    """Get detailed list of user's investments"""
+    """
+    Get detailed list of user's investments.
+    
+    Returns a list of all investments in the user's portfolio with calculated
+    returns and current values.
+    """
     user_id = hash(user_email)
     investments = Investment.get_user_portfolio(db, user_id)
 
@@ -185,12 +237,17 @@ async def get_portfolio_investments(
 
     return result
 
-@app.get("/portfolio/analytics", response_model=PortfolioAnalytics)
+@app.get("/portfolio/analytics", response_model=PortfolioAnalytics, tags=["portfolio"])
 async def get_portfolio_analytics(
         db: Session = Depends(get_db),
         user_email: str = Depends(get_current_user_id)
 ):
-    """Get comprehensive portfolio analytics including summary and investments"""
+    """
+    Get comprehensive portfolio analytics including summary and investments.
+    
+    This endpoint combines portfolio summary and detailed investment information
+    in a single response for a complete portfolio overview.
+    """
     summary = await get_portfolio_summary(db, user_email)
     investments = await get_portfolio_investments(db, user_email)
 
@@ -199,13 +256,18 @@ async def get_portfolio_analytics(
         investments=investments
     )
 
-# Add this utility endpoint to update NAVs (you'll need this for accurate portfolio values)
-@app.post("/investments/update-navs")
+@app.post("/investments/update-navs", tags=["investments"])
 async def update_investment_navs(
         db: Session = Depends(get_db),
         user_email: str = Depends(get_current_user_id)
 ):
-    """Update current NAVs and values for all investments"""
+    """
+    Update current NAVs and values for all investments.
+    
+    This endpoint recalculates the current value of all investments
+    based on the latest NAV data. In a production environment,
+    this would fetch real-time NAV data from an external API.
+    """
     user_id = hash(user_email)
     investments = Investment.get_user_portfolio(db, user_id)
 
@@ -215,3 +277,13 @@ async def update_investment_navs(
 
     db.commit()
     return {"message": "Investment values updated successfully"}
+
+# Health check endpoint
+@app.get("/health", tags=["system"])
+async def health_check():
+    """
+    Check if the service is healthy.
+    
+    Returns a simple status message indicating the service is operational.
+    """
+    return {"status": "healthy", "service": "investment-service"}

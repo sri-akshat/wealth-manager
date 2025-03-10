@@ -1,0 +1,93 @@
+openapi: 3.0.0
+info:
+  title: investment-service API
+  version: 1.0.0
+  description: Investment service API for wealth manager platform. Manages mutual
+    fund investments and portfolio analytics.
+paths:
+  /investment/portfolio/summary:
+    get:
+      summary: get_portfolio_summary
+      description: "Get summary of user's investment portfolio.\n    \n    Returns:\n\
+        \    - Total investment amount\n    - Current portfolio value\n    - Total\
+        \ returns (absolute and percentage)\n    - Number of investments\n    - Asset\
+        \ allocation by fund category"
+      tags:
+      - portfolio
+      responses:
+        '200':
+          description: Successful Response
+  /investment/initialize-sample-data:
+    post:
+      summary: initialize_data
+      description: "Initialize sample mutual fund data for testing.\n    \n    This\
+        \ endpoint adds a set of predefined mutual funds to the database\n    if they\
+        \ don't already exist."
+      tags:
+      - system
+      responses:
+        '200':
+          description: Successful Response
+  /investment/investments:
+    post:
+      summary: create_investment
+      description: "Create a new investment for the current user.\n    \n    Args:\n\
+        \        investment: Investment details including fund_id and purchase amount\n\
+        \        \n    Returns:\n        The created investment with all details\n\
+        \        \n    Raises:\n        404: If the specified fund is not found"
+      tags:
+      - investments
+      responses:
+        '200':
+          description: Successful Response
+  /investment/portfolio/investments:
+    get:
+      summary: get_portfolio_investments
+      description: "Get detailed list of user's investments.\n    \n    Returns a\
+        \ list of all investments in the user's portfolio with calculated\n    returns\
+        \ and current values."
+      tags:
+      - portfolio
+      responses:
+        '200':
+          description: Successful Response
+  /investment/portfolio/analytics:
+    get:
+      summary: get_portfolio_analytics
+      description: "Get comprehensive portfolio analytics including summary and investments.\n\
+        \    \n    This endpoint combines portfolio summary and detailed investment\
+        \ information\n    in a single response for a complete portfolio overview."
+      tags:
+      - portfolio
+      responses:
+        '200':
+          description: Successful Response
+  /investment/investments/update-navs:
+    post:
+      summary: update_investment_navs
+      description: "Update current NAVs and values for all investments.\n    \n  \
+        \  This endpoint recalculates the current value of all investments\n    based\
+        \ on the latest NAV data. In a production environment,\n    this would fetch\
+        \ real-time NAV data from an external API."
+      tags:
+      - investments
+      responses:
+        '200':
+          description: Successful Response
+  /investment/health:
+    get:
+      summary: health_check
+      description: "Check if the service is healthy.\n    \n    Returns a simple status\
+        \ message indicating the service is operational."
+      tags:
+      - system
+      responses:
+        '200':
+          description: Successful Response
+tags:
+- name: portfolio
+  description: Operations related to investment portfolios
+- name: investments
+  description: Operations for managing individual investments
+- name: system
+  description: System maintenance operations

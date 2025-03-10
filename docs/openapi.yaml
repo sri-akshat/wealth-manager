@@ -1,0 +1,161 @@
+openapi: 3.0.0
+info:
+  title: Wealth Manager API
+  version: 1.0.0
+  description: Unified API documentation for the Wealth Manager platform
+paths:
+  /investment/portfolio/summary:
+    get:
+      summary: get_portfolio_summary
+      description: "Get summary of user's investment portfolio.\n    \n    Returns:\n\
+        \    - Total investment amount\n    - Current portfolio value\n    - Total\
+        \ returns (absolute and percentage)\n    - Number of investments\n    - Asset\
+        \ allocation by fund category"
+      tags:
+      - portfolio
+      responses:
+        '200':
+          description: Successful Response
+  /investment/initialize-sample-data:
+    post:
+      summary: initialize_data
+      description: "Initialize sample mutual fund data for testing.\n    \n    This\
+        \ endpoint adds a set of predefined mutual funds to the database\n    if they\
+        \ don't already exist."
+      tags:
+      - system
+      responses:
+        '200':
+          description: Successful Response
+  /investment/investments:
+    post:
+      summary: create_investment
+      description: "Create a new investment for the current user.\n    \n    Args:\n\
+        \        investment: Investment details including fund_id and purchase amount\n\
+        \        \n    Returns:\n        The created investment with all details\n\
+        \        \n    Raises:\n        404: If the specified fund is not found"
+      tags:
+      - investments
+      responses:
+        '200':
+          description: Successful Response
+  /investment/portfolio/investments:
+    get:
+      summary: get_portfolio_investments
+      description: "Get detailed list of user's investments.\n    \n    Returns a\
+        \ list of all investments in the user's portfolio with calculated\n    returns\
+        \ and current values."
+      tags:
+      - portfolio
+      responses:
+        '200':
+          description: Successful Response
+  /investment/portfolio/analytics:
+    get:
+      summary: get_portfolio_analytics
+      description: "Get comprehensive portfolio analytics including summary and investments.\n\
+        \    \n    This endpoint combines portfolio summary and detailed investment\
+        \ information\n    in a single response for a complete portfolio overview."
+      tags:
+      - portfolio
+      responses:
+        '200':
+          description: Successful Response
+  /investment/investments/update-navs:
+    post:
+      summary: update_investment_navs
+      description: "Update current NAVs and values for all investments.\n    \n  \
+        \  This endpoint recalculates the current value of all investments\n    based\
+        \ on the latest NAV data. In a production environment,\n    this would fetch\
+        \ real-time NAV data from an external API."
+      tags:
+      - investments
+      responses:
+        '200':
+          description: Successful Response
+  /investment/health:
+    get:
+      summary: health_check
+      description: "Check if the service is healthy.\n    \n    Returns a simple status\
+        \ message indicating the service is operational."
+      tags:
+      - system
+      responses:
+        '200':
+          description: Successful Response
+  /user/health:
+    get:
+      summary: health_check
+      description: "Check if the service is healthy.\n    \n    Returns a simple status\
+        \ message indicating the service is operational."
+      tags:
+      - system
+      responses:
+        '200':
+          description: Successful Response
+  /user/users:
+    post:
+      summary: create_user
+      description: "Register a new user.\n    \n    Args:\n        user: User details\
+        \ including email, password, full name, and role\n        \n    Returns:\n\
+        \        The created user without sensitive information\n        \n    Raises:\n\
+        \        400: If the email is already registered"
+      tags:
+      - users
+      responses:
+        '200':
+          description: Successful Response
+    get:
+      summary: read_users
+      description: "Get a list of all users (admin only).\n    \n    Args:\n     \
+        \   skip: Number of records to skip for pagination\n        limit: Maximum\
+        \ number of records to return\n        \n    Returns:\n        List of user\
+        \ profiles\n        \n    Raises:\n        401: If the token is invalid\n\
+        \        403: If the user is not an admin"
+      tags:
+      - users
+      responses:
+        '200':
+          description: Successful Response
+  /user/token:
+    post:
+      summary: login
+      description: "Authenticate a user and return an access token.\n    \n    Args:\n\
+        \        form_data: OAuth2 form with username (email) and password\n     \
+        \   \n    Returns:\n        JWT access token with type\n        \n    Raises:\n\
+        \        401: If credentials are invalid"
+      tags:
+      - auth
+      responses:
+        '200':
+          description: Successful Response
+  /user/users/me:
+    get:
+      summary: read_users_me
+      description: "Get the current authenticated user's profile.\n    \n    Returns\
+        \ the profile information of the currently logged-in user.\n    \n    Raises:\n\
+        \        401: If the token is invalid\n        404: If user not found"
+      tags:
+      - users
+      responses:
+        '200':
+          description: Successful Response
+  /gateway/health:
+    get:
+      summary: health_check
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
+tags:
+- name: portfolio
+  description: Operations related to investment portfolios
+- name: investments
+  description: Operations for managing individual investments
+- name: system
+  description: System maintenance operations
+- name: users
+  description: Operations with users and profiles
+- name: auth
+  description: Authentication operations

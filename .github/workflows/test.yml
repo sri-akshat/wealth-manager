@@ -1,4 +1,4 @@
-name: Build
+name: Build and Generate API Docs
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     env:
       PYTHONPATH: ${{ github.workspace }}/services/investment-service/src
@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for proper git operations
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
@@ -28,6 +30,11 @@ jobs:
         run: |
           # Find and install every requirements.txt in the repo
           find . -name "requirements.txt" -exec pip install -r {} \;
+          pip install PyYAML
+
+      - name: Generate OpenAPI Specifications
+        run: |
+          python scripts/generate_openapi.py
 
       - name: Run Tests with Coverage
         run: |
@@ -45,3 +52,25 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: sri-akshat/wealth-manager
+
+      - name: Upload OpenAPI specs as artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: openapi-specs
+          path: |
+            docs/openapi.yaml
+            services/*/docs/openapi.yaml
+          if-no-files-found: error
+
+      # Only commit OpenAPI specs on main branch
+      - name: Commit OpenAPI specs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/openapi.yaml services/*/docs/openapi.yaml
+          # Check if there are any changes to commit
+          if ! git diff --staged --quiet; then
+            git commit -m "Update OpenAPI specifications [skip ci]"
+            git push
+          fi

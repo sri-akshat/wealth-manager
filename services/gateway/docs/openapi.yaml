@@ -1,0 +1,15 @@
+openapi: 3.0.0
+info:
+  title: API Gateway
+  version: 1.0.0
+  description: API documentation for gateway
+paths:
+  /gateway/health:
+    get:
+      summary: health_check
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
+tags: []
