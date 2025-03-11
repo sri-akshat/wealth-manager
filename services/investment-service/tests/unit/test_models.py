@@ -1,6 +1,9 @@
 # tests/test_models.py
 import pytest
-from src.models.investment import Investment, MutualFund, FundCategory
+from datetime import datetime, timedelta
+from decimal import Decimal
+
+from models.investment import Investment, MutualFund, FundCategory
 
 def test_mutual_fund_creation(db, sample_mutual_funds):
     fund = sample_mutual_funds[0]

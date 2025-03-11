@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Enum
-from sqlalchemy.orm import DeclarativeBase, relationship, Session
+from sqlalchemy.orm import relationship, Session
 from datetime import datetime
 import enum
-from ..core.database import Base  # Import Base from database.py
+from core.database import Base
 
 class InvestmentStatus(str, enum.Enum):
     PENDING = "pending"
@@ -19,9 +19,10 @@ class FundCategory(str, enum.Enum):
 
 class MutualFund(Base):
     __tablename__ = "mutual_funds"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True)
-    scheme_code = Column(String, unique=True, index=True)
+    scheme_code = Column(String, unique=True)
     scheme_name = Column(String)
     category = Column(Enum(FundCategory))
     nav = Column(Float)
@@ -34,9 +35,10 @@ class MutualFund(Base):
 
 class Investment(Base):
     __tablename__ = "investments"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, index=True)
+    user_id = Column(Integer)
     fund_id = Column(Integer, ForeignKey("mutual_funds.id"))
     units = Column(Float)
     purchase_nav = Column(Float)

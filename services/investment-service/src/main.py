@@ -4,11 +4,11 @@ from typing import List
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .core.auth import get_current_user_id
-from .core.config import settings
-from .core.database import get_db, engine, Base
-from .models.investment import MutualFund, Investment, InvestmentStatus, FundCategory
-from .schemas.investment import (
+from core.auth import get_current_user_id
+from core.config import settings
+from core.database import get_db, engine, Base
+from models.investment import MutualFund, Investment, InvestmentStatus, FundCategory
+from schemas.investment import (
     InvestmentCreate,
     InvestmentResponse,
     PortfolioSummary,

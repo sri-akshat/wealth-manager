@@ -1,12 +1,17 @@
 # tests/unit/test_schemas.py
 import pytest
 from pydantic import ValidationError
-from datetime import datetime
-from src.models.investment import FundCategory
-from src.schemas.investment import (
+from datetime import datetime, timedelta
+from decimal import Decimal
+
+from models.investment import FundCategory
+from schemas.investment import (
     MutualFundCreate,
+    MutualFundResponse,
     InvestmentCreate,
+    InvestmentResponse,
     PortfolioSummary,
+    PortfolioInvestment,
     InvestmentFilter
 )
 

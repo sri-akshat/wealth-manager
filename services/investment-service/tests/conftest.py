@@ -2,26 +2,21 @@
 import pytest
 import os
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import Engine
 from datetime import datetime, timedelta
-
 import pathlib
 from jose import jwt
 
-from core.config import settings
-
 # Set test mode before importing anything else
 os.environ["TEST_MODE"] = "True"
-import sys
-BASE_DIR = pathlib.Path(__file__).resolve().parent.parent
-sys.path.append(str(BASE_DIR / "src"))
 
 # Import after setting TEST_MODE
-from src.main import app
-from src.core.database import Base, get_db
-from src.models.investment import MutualFund, Investment, FundCategory, InvestmentStatus
+from main import app
+from core.database import Base, get_db
+from core.config import settings
+from models.investment import MutualFund, Investment, FundCategory, InvestmentStatus
 
 # Enable SQLite foreign key support
 @event.listens_for(Engine, "connect")
@@ -30,18 +25,32 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
 
-# Use absolute path for SQLite database
-BASE_DIR = pathlib.Path(__file__).parent.parent
-SQLITE_DB_PATH = BASE_DIR / "test.db"
-TEST_SQLALCHEMY_DATABASE_URL = f"sqlite:///{SQLITE_DB_PATH}"
+# SQLite test database path
+SQLITE_DB_PATH = pathlib.Path("test.db")
+
+# Test database URL
+DATABASE_URL = f"sqlite:///{SQLITE_DB_PATH}"
 
 # Create test engine
-engine = create_engine(
-    TEST_SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False}
-)
+engine = create_engine(DATABASE_URL)
 
+# Create test session factory
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def drop_all_tables():
+    """Drop all tables and indexes from the database"""
+    with engine.connect() as conn:
+        # First drop all indexes
+        indexes = conn.execute(text("SELECT name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%'")).fetchall()
+        for index in indexes:
+            conn.execute(text(f"DROP INDEX IF EXISTS {index[0]}"))
+        conn.commit()
+
+        # Then drop all tables
+        tables = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")).fetchall()
+        for table in tables:
+            conn.execute(text(f"DROP TABLE IF EXISTS {table[0]}"))
+        conn.commit()
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_database():
@@ -52,27 +61,37 @@ def setup_database():
 
     # Create all tables
     Base.metadata.create_all(bind=engine)
+
+    # Create indexes manually after tables are created
+    with engine.connect() as conn:
+        # Drop existing indexes if they exist
+        conn.execute(text("DROP INDEX IF EXISTS ix_mutual_funds_scheme_code"))
+        conn.execute(text("DROP INDEX IF EXISTS ix_investments_user_id"))
+        
+        # Create indexes
+        conn.execute(text("CREATE UNIQUE INDEX ix_mutual_funds_scheme_code ON mutual_funds (scheme_code)"))
+        conn.execute(text("CREATE INDEX ix_investments_user_id ON investments (user_id)"))
+        conn.commit()
+
     yield
-    # Drop all tables after all tests are done
+
+    # Drop all tables after tests are done
     Base.metadata.drop_all(bind=engine)
+    if SQLITE_DB_PATH.exists():
+        SQLITE_DB_PATH.unlink()
 
 @pytest.fixture(scope="function")
 def db():
-    """Creates a fresh database session for each test"""
+    """Create a fresh database session for each test"""
     connection = engine.connect()
-    # Begin a non-ORM transaction
     transaction = connection.begin()
-    # Bind the session to the connection
     session = TestingSessionLocal(bind=connection)
 
-    try:
-        yield session
-    finally:
-        session.close()
-        # Roll back the transaction
-        transaction.rollback()
-        # Close the connection
-        connection.close()
+    yield session
+
+    session.close()
+    transaction.rollback()
+    connection.close()
 
 @pytest.fixture(scope="function")
 def client(db):
@@ -101,7 +120,6 @@ def test_user_token():
         algorithm="HS256"
     )
     return f"Bearer {token}"
-
 
 @pytest.fixture
 def sample_mutual_funds(db):

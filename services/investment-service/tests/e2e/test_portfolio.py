@@ -1,9 +1,10 @@
 # tests/e2e/test_portfolio.py
 import pytest
-from datetime import datetime
+from datetime import datetime, timedelta
+from decimal import Decimal
 
-from src.models.investment import Investment, FundCategory
-from src.schemas.investment import PortfolioSummary, PortfolioInvestment
+from models.investment import Investment, FundCategory
+from schemas.investment import PortfolioSummary, PortfolioInvestment
 
 def test_portfolio_returns_calculation(db, sample_investments):
     user_id = hash("test@example.com")

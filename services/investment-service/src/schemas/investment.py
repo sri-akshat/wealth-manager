@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import datetime
-from ..models.investment import FundCategory, InvestmentStatus
+from models.investment import FundCategory, InvestmentStatus
 
 class MutualFundBase(BaseModel):
     scheme_name: str
