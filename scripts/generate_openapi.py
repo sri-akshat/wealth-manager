@@ -217,7 +217,18 @@ def generate_openapi(service_dir: Path, service_name: str) -> Optional[Dict[str,
             return None
         
         # Generate basic OpenAPI spec with service-specific base path
-        base_path = service_name.replace("-service", "")
+        # Use the correct mount paths that match the main application
+        service_mount_paths = {
+            "user-service": "users",
+            "investment-service": "investments",
+            "transaction-service": "transactions",
+            "kyc-service": "kyc",
+            "admin-service": "admin",
+            "notification-service": "notifications",
+            "gateway": "gateway"
+        }
+        
+        base_path = service_mount_paths.get(service_name, service_name.replace("-service", ""))
         openapi = generate_basic_openapi(app_info, service_name, base_path)
         
         return openapi

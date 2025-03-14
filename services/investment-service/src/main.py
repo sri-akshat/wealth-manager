@@ -3,6 +3,7 @@ from typing import List
 
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
 
 from core.auth import get_current_user_id
 from core.config import settings
@@ -45,6 +46,15 @@ app = FastAPI(
             "description": "System maintenance operations",
         },
     ]
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.get("/portfolio/summary", response_model=PortfolioSummary, tags=["portfolio"])
@@ -287,3 +297,7 @@ async def health_check():
     Returns a simple status message indicating the service is operational.
     """
     return {"status": "healthy", "service": "investment-service"}
+
+@app.get("/")
+async def root():
+    return {"message": "Investment Service API"}

@@ -5,7 +5,7 @@ info:
   description: Investment service API for wealth manager platform. Manages mutual
     fund investments and portfolio analytics.
 paths:
-  /investment/portfolio/summary:
+  /investments/portfolio/summary:
     get:
       summary: get_portfolio_summary
       description: "Get summary of user's investment portfolio.\n    \n    Returns:\n\
@@ -17,7 +17,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /investment/initialize-sample-data:
+  /investments/initialize-sample-data:
     post:
       summary: initialize_data
       description: "Initialize sample mutual fund data for testing.\n    \n    This\
@@ -28,7 +28,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /investment/investments:
+  /investments/investments:
     post:
       summary: create_investment
       description: "Create a new investment for the current user.\n    \n    Args:\n\
@@ -40,7 +40,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /investment/portfolio/investments:
+  /investments/portfolio/investments:
     get:
       summary: get_portfolio_investments
       description: "Get detailed list of user's investments.\n    \n    Returns a\
@@ -51,7 +51,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /investment/portfolio/analytics:
+  /investments/portfolio/analytics:
     get:
       summary: get_portfolio_analytics
       description: "Get comprehensive portfolio analytics including summary and investments.\n\
@@ -62,7 +62,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /investment/investments/update-navs:
+  /investments/investments/update-navs:
     post:
       summary: update_investment_navs
       description: "Update current NAVs and values for all investments.\n    \n  \
@@ -74,13 +74,21 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /investment/health:
+  /investments/health:
     get:
       summary: health_check
       description: "Check if the service is healthy.\n    \n    Returns a simple status\
         \ message indicating the service is operational."
       tags:
       - system
+      responses:
+        '200':
+          description: Successful Response
+  /investments/:
+    get:
+      summary: root
+      description: null
+      tags: []
       responses:
         '200':
           description: Successful Response

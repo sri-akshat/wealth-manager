@@ -1,13 +1,16 @@
 # services/user-service/src/schemas/user.py
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 from ..models.user import UserRole
 
 class UserBase(BaseModel):
     email: EmailStr
-    full_name: str
+    full_name: str = Field(..., alias="name")
     role: UserRole = UserRole.CUSTOMER
+
+    class Config:
+        populate_by_name = True
 
 class UserCreate(UserBase):
     password: str

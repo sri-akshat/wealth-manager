@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: Unified API documentation for the Wealth Manager platform
 paths:
-  /investment/portfolio/summary:
+  /investments/portfolio/summary:
     get:
       summary: get_portfolio_summary
       description: "Get summary of user's investment portfolio.\n    \n    Returns:\n\
@@ -16,7 +16,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /investment/initialize-sample-data:
+  /investments/initialize-sample-data:
     post:
       summary: initialize_data
       description: "Initialize sample mutual fund data for testing.\n    \n    This\
@@ -27,7 +27,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /investment/investments:
+  /investments/investments:
     post:
       summary: create_investment
       description: "Create a new investment for the current user.\n    \n    Args:\n\
@@ -39,7 +39,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /investment/portfolio/investments:
+  /investments/portfolio/investments:
     get:
       summary: get_portfolio_investments
       description: "Get detailed list of user's investments.\n    \n    Returns a\
@@ -50,7 +50,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /investment/portfolio/analytics:
+  /investments/portfolio/analytics:
     get:
       summary: get_portfolio_analytics
       description: "Get comprehensive portfolio analytics including summary and investments.\n\
@@ -61,7 +61,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /investment/investments/update-navs:
+  /investments/investments/update-navs:
     post:
       summary: update_investment_navs
       description: "Update current NAVs and values for all investments.\n    \n  \
@@ -73,7 +73,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /investment/health:
+  /investments/health:
     get:
       summary: health_check
       description: "Check if the service is healthy.\n    \n    Returns a simple status\
@@ -83,7 +83,79 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /user/health:
+  /investments/:
+    get:
+      summary: root
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
+  /notifications/health:
+    get:
+      summary: health_check
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
+  /notifications/:
+    get:
+      summary: root
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
+  /kyc/health:
+    get:
+      summary: health_check
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
+  /kyc/:
+    get:
+      summary: root
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
+  /admin/health:
+    get:
+      summary: health_check
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
+  /admin/:
+    get:
+      summary: root
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
+  /transactions/health:
+    get:
+      summary: health_check
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
+  /transactions/:
+    get:
+      summary: root
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
+  /users/health:
     get:
       summary: health_check
       description: "Check if the service is healthy.\n    \n    Returns a simple status\
@@ -93,7 +165,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /user/users:
+  /users/register:
     post:
       summary: create_user
       description: "Register a new user.\n    \n    Args:\n        user: User details\
@@ -105,19 +177,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-    get:
-      summary: read_users
-      description: "Get a list of all users (admin only).\n    \n    Args:\n     \
-        \   skip: Number of records to skip for pagination\n        limit: Maximum\
-        \ number of records to return\n        \n    Returns:\n        List of user\
-        \ profiles\n        \n    Raises:\n        401: If the token is invalid\n\
-        \        403: If the user is not an admin"
-      tags:
-      - users
-      responses:
-        '200':
-          description: Successful Response
-  /user/token:
+  /users/token:
     post:
       summary: login
       description: "Authenticate a user and return an access token.\n    \n    Args:\n\
@@ -129,12 +189,25 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /user/users/me:
+  /users/users/me:
     get:
       summary: read_users_me
       description: "Get the current authenticated user's profile.\n    \n    Returns\
         \ the profile information of the currently logged-in user.\n    \n    Raises:\n\
         \        401: If the token is invalid\n        404: If user not found"
+      tags:
+      - users
+      responses:
+        '200':
+          description: Successful Response
+  /users/users:
+    get:
+      summary: read_users
+      description: "Get a list of all users (admin only).\n    \n    Args:\n     \
+        \   skip: Number of records to skip for pagination\n        limit: Maximum\
+        \ number of records to return\n        \n    Returns:\n        List of user\
+        \ profiles\n        \n    Raises:\n        401: If the token is invalid\n\
+        \        403: If the user is not an admin"
       tags:
       - users
       responses:

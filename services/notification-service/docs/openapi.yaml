@@ -1,0 +1,23 @@
+openapi: 3.0.0
+info:
+  title: Notification Service
+  version: 1.0.0
+  description: API documentation for notification-service
+paths:
+  /notifications/health:
+    get:
+      summary: health_check
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
+  /notifications/:
+    get:
+      summary: root
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
+tags: []

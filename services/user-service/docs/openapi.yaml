@@ -5,7 +5,7 @@ info:
   description: User management service for wealth manager platform. Handles user registration,
     authentication, and profile management.
 paths:
-  /user/health:
+  /users/health:
     get:
       summary: health_check
       description: "Check if the service is healthy.\n    \n    Returns a simple status\
@@ -15,7 +15,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /user/users:
+  /users/register:
     post:
       summary: create_user
       description: "Register a new user.\n    \n    Args:\n        user: User details\
@@ -27,19 +27,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-    get:
-      summary: read_users
-      description: "Get a list of all users (admin only).\n    \n    Args:\n     \
-        \   skip: Number of records to skip for pagination\n        limit: Maximum\
-        \ number of records to return\n        \n    Returns:\n        List of user\
-        \ profiles\n        \n    Raises:\n        401: If the token is invalid\n\
-        \        403: If the user is not an admin"
-      tags:
-      - users
-      responses:
-        '200':
-          description: Successful Response
-  /user/token:
+  /users/token:
     post:
       summary: login
       description: "Authenticate a user and return an access token.\n    \n    Args:\n\
@@ -51,12 +39,25 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /user/users/me:
+  /users/users/me:
     get:
       summary: read_users_me
       description: "Get the current authenticated user's profile.\n    \n    Returns\
         \ the profile information of the currently logged-in user.\n    \n    Raises:\n\
         \        401: If the token is invalid\n        404: If user not found"
+      tags:
+      - users
+      responses:
+        '200':
+          description: Successful Response
+  /users/users:
+    get:
+      summary: read_users
+      description: "Get a list of all users (admin only).\n    \n    Args:\n     \
+        \   skip: Number of records to skip for pagination\n        limit: Maximum\
+        \ number of records to return\n        \n    Returns:\n        List of user\
+        \ profiles\n        \n    Raises:\n        401: If the token is invalid\n\
+        \        403: If the user is not an admin"
       tags:
       - users
       responses:

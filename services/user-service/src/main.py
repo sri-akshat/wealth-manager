@@ -50,7 +50,7 @@ async def health_check():
     """
     return {"status": "healthy", "service": "user-service"}
 
-@app.post("/users", response_model=UserResponse, tags=["users"])
+@app.post("/register", response_model=UserResponse, tags=["users"])
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     """
     Register a new user.
