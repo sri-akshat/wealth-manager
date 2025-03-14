@@ -4,6 +4,22 @@ info:
   version: 1.0.0
   description: Unified API documentation for the Wealth Manager platform
 paths:
+  /kyc/health:
+    get:
+      summary: health_check
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
+  /kyc/:
+    get:
+      summary: root
+      description: null
+      tags: []
+      responses:
+        '200':
+          description: Successful Response
   /investments/portfolio/summary:
     get:
       summary: get_portfolio_summary
@@ -91,7 +107,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /notifications/health:
+  /transactions/health:
     get:
       summary: health_check
       description: null
@@ -99,23 +115,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /notifications/:
-    get:
-      summary: root
-      description: null
-      tags: []
-      responses:
-        '200':
-          description: Successful Response
-  /kyc/health:
-    get:
-      summary: health_check
-      description: null
-      tags: []
-      responses:
-        '200':
-          description: Successful Response
-  /kyc/:
+  /transactions/:
     get:
       summary: root
       description: null
@@ -139,7 +139,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /transactions/health:
+  /notifications/health:
     get:
       summary: health_check
       description: null
@@ -147,7 +147,7 @@ paths:
       responses:
         '200':
           description: Successful Response
-  /transactions/:
+  /notifications/:
     get:
       summary: root
       description: null
