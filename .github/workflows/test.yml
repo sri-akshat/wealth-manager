@@ -28,6 +28,8 @@ jobs:
 
       - name: Install Dependencies Recursively
         run: |
+          python -m venv .venv
+          source .venv/bin/activate
           # Find and install every requirements.txt in the repo
           find . -name "requirements.txt" -exec pip install -r {} \;
           pip install PyYAML
@@ -38,8 +40,8 @@ jobs:
 
       - name: Run Tests with Coverage
         run: |
-          # Adjust the --cov flag to point to your source directory if needed
-          pytest --maxfail=1 --disable-warnings --cov=. --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+          chmod +x ./run_tests.sh
+          ./run_tests.sh
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
