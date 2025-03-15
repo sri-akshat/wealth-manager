@@ -34,7 +34,8 @@ jobs:
         
         # Install required packages
         pip install --upgrade pip
-        pip install PyYAML pytest pytest-cov pydantic-settings
+        pip install PyYAML pytest pytest-cov
+        pip install pydantic==2.4.2 pydantic-settings==2.0.3
         
         # Find and install every requirements.txt in the repo
         find . -name "requirements.txt" -exec pip install -r {} \;
