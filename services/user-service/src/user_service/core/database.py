@@ -1,5 +1,6 @@
-# services/user-service/src/core/database.py
+# services/user-service/src/user_service/core/database.py
 from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 from pathlib import Path
@@ -13,6 +14,9 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localho
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Create declarative base
+Base = declarative_base()
 
 def get_db():
     db = SessionLocal()

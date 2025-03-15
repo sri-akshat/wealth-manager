@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Enu
 from sqlalchemy.orm import relationship, Session
 from datetime import datetime
 import enum
-from core.database import Base
+from ..core.database import Base
 
 class InvestmentStatus(str, enum.Enum):
     PENDING = "pending"

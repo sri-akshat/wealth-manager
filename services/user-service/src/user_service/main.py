@@ -1,13 +1,13 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from .core.security import verify_password, get_password_hash, create_access_token, SECRET_KEY, ALGORITHM
+from .core.database import get_db, Base, engine
+from .models.user import User, Role
+from .schemas.user import UserCreate, UserResponse, Token, TokenData
 from jose import JWTError, jwt
-from .core.database import get_db, engine
-from .core.security import verify_password, get_password_hash, create_access_token
-from .models.user import User, UserRole, Base
-from .schemas.user import UserCreate, UserResponse, Token
-from typing import List
+from datetime import datetime, timedelta
+from typing import List, Optional
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -41,17 +41,25 @@ app = FastAPI(
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-@app.get("/health", tags=["system"])
-async def health_check():
-    """
-    Check if the service is healthy.
-    
-    Returns a simple status message indicating the service is operational.
-    """
-    return {"status": "healthy", "service": "user-service"}
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+@app.post("/users/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = User(
+        email=user.email,
+        hashed_password=get_password_hash(user.password),
+        full_name=user.full_name,
+        role=user.role
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
 
 @app.post("/register", response_model=UserResponse, tags=["users"])
-async def create_user(user: UserCreate, db: Session = Depends(get_db)):
+async def register_user(user: UserCreate, db: Session = Depends(get_db)):
     """
     Register a new user.
     
@@ -80,7 +88,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     return db_user
 
 @app.post("/token", response_model=Token, tags=["auth"])
-async def login(
+async def login_for_access_token(
         form_data: OAuth2PasswordRequestForm = Depends(),
         db: Session = Depends(get_db)
 ):
@@ -106,7 +114,7 @@ async def login(
 
     access_token_expires = timedelta(minutes=30)
     access_token = create_access_token(
-        data={"sub": user.email, "role": user.role},
+        data={"sub": user.email, "role": user.role.value},
         expires_delta=access_token_expires
     )
 
@@ -127,7 +135,7 @@ async def read_users_me(
         404: If user not found
     """
     try:
-        payload = jwt.decode(token, "your-secret-key-here", algorithms=["HS256"])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
             raise HTTPException(status_code=401, detail="Invalid authentication token")
@@ -140,7 +148,7 @@ async def read_users_me(
     return user
 
 @app.get("/users", response_model=List[UserResponse], tags=["users"])
-async def read_users(
+async def get_users(
         skip: int = 0,
         limit: int = 100,
         token: str = Depends(oauth2_scheme),
@@ -162,9 +170,9 @@ async def read_users(
     """
     # Verify admin access
     try:
-        payload = jwt.decode(token, "your-secret-key-here", algorithms=["HS256"])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         role = payload.get("role")
-        if role != UserRole.ADMIN:
+        if role != Role.ADMIN:
             raise HTTPException(status_code=403, detail="Not authorized")
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication token")

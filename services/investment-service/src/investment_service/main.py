@@ -1,21 +1,21 @@
 # src/main.py
 from typing import List
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
-
-from core.auth import get_current_user_id
-from core.config import settings
-from core.database import get_db, engine, Base
-from models.investment import MutualFund, Investment, InvestmentStatus, FundCategory
-from schemas.investment import (
+from .core.database import get_db, Base, engine
+from .core.auth import get_current_user_id
+from .core.config import settings
+from .models.investment import MutualFund, Investment, InvestmentStatus, FundCategory
+from .schemas.investment import (
     InvestmentCreate,
     InvestmentResponse,
     PortfolioSummary,
     PortfolioInvestment,
     PortfolioAnalytics
 )
+from datetime import datetime
 
 # Create tables if not in test mode
 if not settings.TEST_MODE:
@@ -59,27 +59,16 @@ app.add_middleware(
 
 @app.get("/portfolio/summary", response_model=PortfolioSummary, tags=["portfolio"])
 async def get_portfolio_summary(
-        db: Session = Depends(get_db),
-        user_email: str = Depends(get_current_user_id)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     Get summary of user's investment portfolio.
     
-    Returns:
-    - Total investment amount
-    - Current portfolio value
-    - Total returns (absolute and percentage)
-    - Number of investments
-    - Asset allocation by fund category
+    Returns total investment, current value, returns, and asset allocation.
     """
     try:
-        user_id = hash(user_email)
-        investments = db.query(Investment).filter(
-            Investment.user_id == user_id
-        ).join(
-            Investment.fund
-        ).all()
-
+        investments = Investment.get_user_portfolio(db, user_id)
         if not investments:
             return PortfolioSummary(
                 total_investment=0,
@@ -95,9 +84,10 @@ async def get_portfolio_summary(
         total_returns = current_value - total_investment
         returns_percentage = (total_returns / total_investment * 100) if total_investment > 0 else 0
 
+        # Calculate asset allocation
         allocation = {}
         for inv in investments:
-            category = inv.fund.category.value
+            category = inv.fund.category.value.lower()  # Convert to lowercase
             allocation[category] = allocation.get(category, 0) + inv.current_value
 
         total_value = sum(allocation.values())
@@ -175,23 +165,16 @@ async def initialize_data(db: Session = Depends(get_db)):
     add_sample_funds(db)
     return {"message": "Sample data initialized"}
 
-@app.post("/investments", response_model=InvestmentResponse, tags=["investments"])
+@app.post("/investments/", response_model=InvestmentResponse, tags=["investments"])
 async def create_investment(
-        investment: InvestmentCreate,
-        db: Session = Depends(get_db),
-        user_email: str = Depends(get_current_user_id)
+    investment: InvestmentCreate,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
-    Create a new investment for the current user.
+    Create a new investment for the user.
     
-    Args:
-        investment: Investment details including fund_id and purchase amount
-        
-    Returns:
-        The created investment with all details
-        
-    Raises:
-        404: If the specified fund is not found
+    Takes investment details and creates a new investment record.
     """
     fund = db.query(MutualFund).filter(MutualFund.id == investment.fund_id).first()
     if not fund:
@@ -199,7 +182,7 @@ async def create_investment(
 
     units = investment.purchase_amount / fund.nav
     db_investment = Investment(
-        user_id=hash(user_email),  # Using hash of email as user_id
+        user_id=user_id,  # Use the user_id from the token
         fund_id=investment.fund_id,
         units=units,
         purchase_nav=fund.nav,
@@ -216,8 +199,8 @@ async def create_investment(
 
 @app.get("/portfolio/investments", response_model=List[PortfolioInvestment], tags=["portfolio"])
 async def get_portfolio_investments(
-        db: Session = Depends(get_db),
-        user_email: str = Depends(get_current_user_id)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     Get detailed list of user's investments.
@@ -225,7 +208,6 @@ async def get_portfolio_investments(
     Returns a list of all investments in the user's portfolio with calculated
     returns and current values.
     """
-    user_id = hash(user_email)
     investments = Investment.get_user_portfolio(db, user_id)
 
     result = []
@@ -250,7 +232,7 @@ async def get_portfolio_investments(
 @app.get("/portfolio/analytics", response_model=PortfolioAnalytics, tags=["portfolio"])
 async def get_portfolio_analytics(
         db: Session = Depends(get_db),
-        user_email: str = Depends(get_current_user_id)
+        user_id: str = Depends(get_current_user_id)
 ):
     """
     Get comprehensive portfolio analytics including summary and investments.
@@ -258,8 +240,8 @@ async def get_portfolio_analytics(
     This endpoint combines portfolio summary and detailed investment information
     in a single response for a complete portfolio overview.
     """
-    summary = await get_portfolio_summary(db, user_email)
-    investments = await get_portfolio_investments(db, user_email)
+    summary = await get_portfolio_summary(db, user_id)
+    investments = await get_portfolio_investments(db, user_id)
 
     return PortfolioAnalytics(
         summary=summary,
@@ -269,7 +251,7 @@ async def get_portfolio_analytics(
 @app.post("/investments/update-navs", tags=["investments"])
 async def update_investment_navs(
         db: Session = Depends(get_db),
-        user_email: str = Depends(get_current_user_id)
+        user_id: str = Depends(get_current_user_id)
 ):
     """
     Update current NAVs and values for all investments.
@@ -278,7 +260,6 @@ async def update_investment_navs(
     based on the latest NAV data. In a production environment,
     this would fetch real-time NAV data from an external API.
     """
-    user_id = hash(user_email)
     investments = Investment.get_user_portfolio(db, user_id)
 
     for investment in investments:

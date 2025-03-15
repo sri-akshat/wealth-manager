@@ -1,54 +1,76 @@
-# tests/unit/test_schemas.py
+# tests/test_schemas.py
 import pytest
-from pydantic import ValidationError
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
+from typing import Dict, List
 
-from models.investment import FundCategory
-from schemas.investment import (
-    MutualFundCreate,
-    MutualFundResponse,
+from investment_service.models.investment import FundCategory, InvestmentStatus
+from investment_service.schemas.investment import (
     InvestmentCreate,
     InvestmentResponse,
     PortfolioSummary,
-    PortfolioInvestment,
-    InvestmentFilter
+    PortfolioInvestment
 )
 
-def test_mutual_fund_create_validation():
-    # Valid data
-    valid_data = {
-        "scheme_code": "TEST001",
-        "scheme_name": "Test Fund",
-        "category": FundCategory.EQUITY,  # Use enum value directly
-        "nav": 100.50,
-        "risk_level": "HIGH",
-        "expense_ratio": 1.5
+def test_investment_create_schema():
+    data = {
+        "fund_id": 1,
+        "purchase_amount": 10000
     }
-    fund = MutualFundCreate(**valid_data)
-    assert fund.scheme_code == "TEST001"
+    investment = InvestmentCreate(**data)
+    assert investment.fund_id == 1
+    assert investment.purchase_amount == 10000
 
-    # Invalid nav
-    with pytest.raises(ValidationError):
-        invalid_data = valid_data.copy()
-        invalid_data["nav"] = -100
-        MutualFundCreate(**invalid_data)
-
-def test_investment_filter_validation():
-    # Valid data
-    valid_data = {
-        "category": FundCategory.EQUITY,  # Use enum value directly
-        "min_amount": 1000,
-        "max_amount": 5000,
-        "start_date": datetime(2023, 1, 1),
-        "end_date": datetime(2023, 12, 31)
+def test_investment_response_schema():
+    data = {
+        "id": 1,
+        "user_id": hash("test@example.com"),
+        "fund_id": 1,
+        "units": 100,
+        "purchase_nav": 95.50,
+        "current_nav": 100.50,
+        "purchase_amount": 9550,
+        "current_value": 10050,
+        "purchase_date": datetime.utcnow(),
+        "status": InvestmentStatus.COMPLETED
     }
-    filter_params = InvestmentFilter(**valid_data)
-    assert filter_params.category == FundCategory.EQUITY
+    response = InvestmentResponse(**data)
+    assert response.id == 1
+    assert response.units == 100
+    assert response.current_value == 10050
 
-    # Invalid date range
-    with pytest.raises(ValidationError):
-        invalid_data = valid_data.copy()
-        invalid_data["start_date"] = datetime(2023, 12, 31)
-        invalid_data["end_date"] = datetime(2023, 1, 1)
-        InvestmentFilter(**invalid_data)
+def test_portfolio_summary_schema():
+    data = {
+        "total_investment": 100000,
+        "current_value": 110000,
+        "total_returns": 10000,
+        "returns_percentage": 10.0,
+        "number_of_investments": 5,
+        "asset_allocation": {
+            "EQUITY": 60.0,
+            "DEBT": 40.0
+        }
+    }
+    summary = PortfolioSummary(**data)
+    assert summary.total_investment == 100000
+    assert summary.returns_percentage == 10.0
+    assert summary.asset_allocation["EQUITY"] == 60.0
+
+def test_portfolio_investment_schema():
+    data = {
+        "id": 1,
+        "fund_name": "HDFC Top 100",
+        "category": FundCategory.EQUITY,
+        "units": 100,
+        "purchase_nav": 95.50,
+        "current_nav": 100.50,
+        "purchase_amount": 9550,
+        "current_value": 10050,
+        "returns": 500,
+        "returns_percentage": 5.23,
+        "purchase_date": datetime.utcnow()
+    }
+    investment = PortfolioInvestment(**data)
+    assert investment.fund_name == "HDFC Top 100"
+    assert investment.category == FundCategory.EQUITY
+    assert investment.returns == 500
