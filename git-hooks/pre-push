@@ -7,7 +7,7 @@
            echo "Detected push to main branch. Running tests..."
    
            # Run your test suite (customize this command as needed)
-           pytest --maxfail=1 --disable-warnings --exitfirst
+           ./run_tests.sh
            RESULT=$?
            
            if [ $RESULT -ne 0 ]; then
