@@ -6,9 +6,13 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from datetime import datetime, timezone
 from investment_service.core.database import Base, get_db
-from investment_service.core.auth import create_test_token
-from investment_service.models.investment import MutualFund, Investment, FundCategory, InvestmentStatus
+from investment_service.core.config import settings
 from investment_service.main import app
+from investment_service.models.investment import MutualFund, Investment, FundCategory, InvestmentStatus
+from investment_service.core.auth import create_test_token
+
+# Set test mode
+settings.TEST_MODE = True
 
 # Create test database
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"

@@ -1,4 +1,4 @@
-name: Build and Generate API Docs
+name: Test and Generate API Docs
 
 on:
   push:
@@ -7,79 +7,95 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     env:
       PYTHONPATH: ${{ github.workspace }}/services/investment-service/src
     strategy:
       matrix:
-        python-version: [3.12]  # Adjust versions as needed
+        python-version: [3.12]
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Fetch all history for proper git operations
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for proper git operations
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Setup Virtual Environment and Install Dependencies
+      run: |
+        # Create and activate virtual environment
+        python -m venv .venv
+        source .venv/bin/activate
+        
+        # Install required packages
+        pip install --upgrade pip
+        pip install PyYAML pytest pytest-cov
+        
+        # Find and install every requirements.txt in the repo
+        find . -name "requirements.txt" -exec pip install -r {} \;
+        pip install -r requirements-test.txt
+        
+    - name: Set up environment variables
+      run: |
+        echo "TEST_MODE=true" >> $GITHUB_ENV
+        
+    - name: Generate OpenAPI Specifications
+      run: |
+        source .venv/bin/activate
+        python scripts/generate_openapi.py
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
+    - name: Run tests
+      run: |
+        source .venv/bin/activate
+        chmod +x ./run_tests.sh
+        ./run_tests.sh
+        
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: |
+          **/junit.xml
+          **/coverage.xml
+        
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      with:
+        files: |
+          services/user-service/coverage.xml
+          services/investment-service/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: true
+        verbose: true
+        slug: sri-akshat/wealth-manager
 
-      - name: Setup Virtual Environment and Install Dependencies
-        run: |
-          # Create and activate virtual environment
-          python -m venv .venv
-          source .venv/bin/activate
-          
-          # Install required packages
-          pip install --upgrade pip
-          pip install PyYAML pytest pytest-cov
-          
-          # Find and install every requirements.txt in the repo
-          find . -name "requirements.txt" -exec pip install -r {} \;
+    - name: Upload OpenAPI specs as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: openapi-specs
+        path: |
+          docs/openapi.yaml
+          services/*/docs/openapi.yaml
+        if-no-files-found: error
 
-      - name: Generate OpenAPI Specifications
-        run: |
-          source .venv/bin/activate
-          python scripts/generate_openapi.py
-
-      - name: Run Tests with Coverage
-        run: |
-          source .venv/bin/activate
-          chmod +x ./run_tests.sh
-          ./run_tests.sh
-
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: sri-akshat/wealth-manager
-
-      - name: Upload OpenAPI specs as artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: openapi-specs
-          path: |
-            docs/openapi.yaml
-            services/*/docs/openapi.yaml
-          if-no-files-found: error
-
-      # Only commit OpenAPI specs on main branch
-      - name: Commit OpenAPI specs
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add docs/openapi.yaml services/*/docs/openapi.yaml
-          # Check if there are any changes to commit
-          if ! git diff --staged --quiet; then
-            git commit -m "Update OpenAPI specifications [skip ci]"
-            git push
-          fi
+    # Only commit OpenAPI specs on main branch
+    - name: Commit OpenAPI specs
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add docs/openapi.yaml services/*/docs/openapi.yaml
+        # Check if there are any changes to commit
+        if ! git diff --staged --quiet; then
+          git commit -m "Update OpenAPI specifications [skip ci]"
+          git push
+        fi

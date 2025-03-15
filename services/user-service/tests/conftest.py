@@ -6,9 +6,13 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from user_service.core.database import Base, get_db
+from user_service.core.config import settings
 from user_service.main import app
 from user_service.models.user import User, Role
 from user_service.core.security import get_password_hash, create_access_token
+
+# Set test mode
+settings.TEST_MODE = True
 
 # Create test database
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
