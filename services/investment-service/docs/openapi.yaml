@@ -5,93 +5,115 @@ info:
   description: Investment service API for wealth manager platform. Manages mutual
     fund investments and portfolio analytics.
 paths:
-  /investments/portfolio/summary:
+  /:
     get:
-      summary: get_portfolio_summary
-      description: "Get summary of user's investment portfolio.\n    \n    Returns:\n\
-        \    - Total investment amount\n    - Current portfolio value\n    - Total\
-        \ returns (absolute and percentage)\n    - Number of investments\n    - Asset\
-        \ allocation by fund category"
       tags:
-      - portfolio
+      - system
+      summary: Root endpoint that provides basic service information.
+      description: "Root endpoint that provides basic service information.\n    \n\
+        \    Returns service name, version, and status."
       responses:
         '200':
-          description: Successful Response
-  /investments/initialize-sample-data:
+          description: Successful response
+          content:
+            application/json:
+              schema: {}
+  /health:
+    get:
+      tags:
+      - system
+      summary: Check if the service is healthy.
+      description: "Check if the service is healthy.\n    \n    Returns a simple status\
+        \ message indicating the service is operational."
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema: {}
+  /portfolio/summary:
+    get:
+      tags:
+      - portfolio
+      summary: Get summary of user's investment portfolio.
+      description: "Get summary of user's investment portfolio.\n    \n    Returns\
+        \ total investment, current value, returns, and asset allocation."
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema: {}
+  /initialize-sample-data:
     post:
-      summary: initialize_data
+      tags:
+      - system
+      summary: Initialize sample mutual fund data for testing.
       description: "Initialize sample mutual fund data for testing.\n    \n    This\
         \ endpoint adds a set of predefined mutual funds to the database\n    if they\
         \ don't already exist."
-      tags:
-      - system
       responses:
         '200':
-          description: Successful Response
-  /investments/investments:
+          description: Successful response
+          content:
+            application/json:
+              schema: {}
+  /investments/:
     post:
-      summary: create_investment
-      description: "Create a new investment for the current user.\n    \n    Args:\n\
-        \        investment: Investment details including fund_id and purchase amount\n\
-        \        \n    Returns:\n        The created investment with all details\n\
-        \        \n    Raises:\n        404: If the specified fund is not found"
       tags:
       - investments
+      summary: Create a new investment for the user.
+      description: "Create a new investment for the user.\n    \n    Takes investment\
+        \ details and creates a new investment record."
       responses:
         '200':
-          description: Successful Response
-  /investments/portfolio/investments:
+          description: Successful response
+          content:
+            application/json:
+              schema: {}
+  /portfolio/investments:
     get:
-      summary: get_portfolio_investments
+      tags:
+      - portfolio
+      summary: Get detailed list of user's investments.
       description: "Get detailed list of user's investments.\n    \n    Returns a\
         \ list of all investments in the user's portfolio with calculated\n    returns\
         \ and current values."
-      tags:
-      - portfolio
       responses:
         '200':
-          description: Successful Response
-  /investments/portfolio/analytics:
+          description: Successful response
+          content:
+            application/json:
+              schema: {}
+  /portfolio/analytics:
     get:
-      summary: get_portfolio_analytics
+      tags:
+      - portfolio
+      summary: Get comprehensive portfolio analytics including summary and investments.
       description: "Get comprehensive portfolio analytics including summary and investments.\n\
         \    \n    This endpoint combines portfolio summary and detailed investment\
         \ information\n    in a single response for a complete portfolio overview."
-      tags:
-      - portfolio
       responses:
         '200':
-          description: Successful Response
-  /investments/investments/update-navs:
+          description: Successful response
+          content:
+            application/json:
+              schema: {}
+  /investments/update-navs:
     post:
-      summary: update_investment_navs
+      tags:
+      - investments
+      summary: Update current NAVs and values for all investments.
       description: "Update current NAVs and values for all investments.\n    \n  \
         \  This endpoint recalculates the current value of all investments\n    based\
         \ on the latest NAV data. In a production environment,\n    this would fetch\
         \ real-time NAV data from an external API."
-      tags:
-      - investments
       responses:
         '200':
-          description: Successful Response
-  /investments/health:
-    get:
-      summary: health_check
-      description: "Check if the service is healthy.\n    \n    Returns a simple status\
-        \ message indicating the service is operational."
-      tags:
-      - system
-      responses:
-        '200':
-          description: Successful Response
-  /investments/:
-    get:
-      summary: root
-      description: null
-      tags: []
-      responses:
-        '200':
-          description: Successful Response
+          description: Successful response
+          content:
+            application/json:
+              schema: {}
 tags:
 - name: portfolio
   description: Operations related to investment portfolios
@@ -99,3 +121,156 @@ tags:
   description: Operations for managing individual investments
 - name: system
   description: System maintenance operations
+components:
+  schemas:
+    MutualFundBase:
+      type: object
+      properties:
+        scheme_code:
+          type: string
+        scheme_name:
+          type: string
+        category:
+          type: string
+        nav:
+          type: number
+        aum:
+          type: number
+        risk_level:
+          type: string
+        expense_ratio:
+          type: number
+      description: ''
+    MutualFundCreate:
+      type: object
+      properties: {}
+      description: ''
+    MutualFundResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        last_updated:
+          type: string
+          format: date-time
+      description: ''
+    InvestmentBase:
+      type: object
+      properties:
+        fund_id:
+          type: integer
+        purchase_amount:
+          type: number
+      description: ''
+    InvestmentCreate:
+      type: object
+      properties: {}
+      description: ''
+    InvestmentResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        fund_id:
+          type: integer
+        units:
+          type: number
+        purchase_nav:
+          type: number
+        current_nav:
+          type: number
+        purchase_amount:
+          type: number
+        current_value:
+          type: number
+        purchase_date:
+          type: string
+          format: date-time
+        status:
+          type: string
+      description: ''
+    PortfolioInvestment:
+      type: object
+      properties:
+        id:
+          type: integer
+        fund_name:
+          type: string
+        category:
+          type: string
+        units:
+          type: number
+        purchase_nav:
+          type: number
+        current_nav:
+          type: number
+        purchase_amount:
+          type: number
+        current_value:
+          type: number
+        returns:
+          type: number
+        returns_percentage:
+          type: number
+        purchase_date:
+          type: string
+          format: date-time
+      description: ''
+    PortfolioInvestmentList:
+      type: object
+      properties:
+        investments:
+          type: string
+      description: A list of portfolio investments.
+    PortfolioSummary:
+      type: object
+      properties:
+        total_investment:
+          type: number
+        current_value:
+          type: number
+        total_returns:
+          type: number
+        returns_percentage:
+          type: number
+        number_of_investments:
+          type: integer
+        asset_allocation:
+          type: string
+      description: ''
+    PortfolioAnalytics:
+      type: object
+      properties:
+        summary:
+          type: string
+        investments:
+          type: string
+      description: ''
+    InvestmentFilter:
+      type: object
+      properties:
+        category:
+          type: string
+          nullable: true
+        min_amount:
+          type: number
+          nullable: true
+        max_amount:
+          type: number
+          nullable: true
+        start_date:
+          type: string
+          nullable: true
+          format: date-time
+        end_date:
+          type: string
+          nullable: true
+          format: date-time
+      description: ''
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

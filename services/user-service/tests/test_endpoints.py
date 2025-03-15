@@ -7,7 +7,7 @@ from user_service.core.security import create_access_token
 def test_create_user(client):
     """Test user creation endpoint."""
     response = client.post(
-        "/users/",
+        "/register",
         json={
             "email": "test@example.com",
             "password": "password123",
@@ -17,9 +17,10 @@ def test_create_user(client):
     )
     assert response.status_code == status.HTTP_201_CREATED
     data = response.json()
-    assert data["email"] == "test@example.com"
-    assert data["full_name"] == "Test User"
-    assert data["role"] == Role.CUSTOMER.value
+    assert data["user"]["email"] == "test@example.com"
+    assert data["user"]["full_name"] == "Test User"
+    assert data["user"]["role"] == Role.CUSTOMER.value
+    assert "access_token" in data
 
 def test_register_user(client):
     """Test user registration with valid data."""
@@ -32,11 +33,12 @@ def test_register_user(client):
             "role": Role.CUSTOMER.value
         }
     )
-    assert response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_201_CREATED
     data = response.json()
-    assert data["email"] == "newuser@example.com"
-    assert data["full_name"] == "New User"
-    assert data["role"] == Role.CUSTOMER.value
+    assert data["user"]["email"] == "newuser@example.com"
+    assert data["user"]["full_name"] == "New User"
+    assert data["user"]["role"] == Role.CUSTOMER.value
+    assert "access_token" in data
 
 def test_register_duplicate_email(client, test_user):
     """Test user registration with duplicate email."""
@@ -58,12 +60,14 @@ def test_login_success(client, test_user):
         data={
             "username": test_user.email,
             "password": "password123"
-        }
+        },
+        headers={"Content-Type": "application/x-www-form-urlencoded"}
     )
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert "access_token" in data
     assert data["token_type"] == "bearer"
+    assert "user" in data
 
 def test_login_invalid_credentials(client):
     """Test login with invalid credentials."""
@@ -72,7 +76,8 @@ def test_login_invalid_credentials(client):
         data={
             "username": "wrong@example.com",
             "password": "wrongpass"
-        }
+        },
+        headers={"Content-Type": "application/x-www-form-urlencoded"}
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -103,8 +108,12 @@ def test_get_users_admin(client, test_admin_token):
     )
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
-    assert isinstance(data, list)
-    assert len(data) > 0
+    assert "users" in data
+    assert isinstance(data["users"], list)
+    assert len(data["users"]) > 0
+    assert "total" in data
+    assert "skip" in data
+    assert "limit" in data
 
 def test_get_users_unauthorized(client, test_user_token):
     """Test getting all users with non-admin token."""

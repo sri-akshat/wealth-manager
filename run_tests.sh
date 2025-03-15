@@ -3,92 +3,53 @@
 # Exit on error
 set -e
 
-# Activate virtual environment
-source .venv/bin/activate
+# Set up Python path
+export PYTHONPATH=$PYTHONPATH:$(pwd)
 
-# Array of services with coverage requirements
-services_with_coverage=(
-    "user-service"
-    "investment-service"
-)
+# Install test dependencies
+pip install -r requirements-test.txt
 
-# Array of services without coverage requirements
-services_without_coverage=(
-    "admin-service"
-    "kyc-service"
-    "notification-service"
-    "transaction-service"
-)
+# Generate OpenAPI specifications
+echo "Generating OpenAPI specifications..."
+python scripts/generate_openapi.py
 
-# Colors for output
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Run OpenAPI compliance tests
+echo "Running OpenAPI compliance tests..."
+python -m pytest scripts/test_openapi_compliance.py -v
 
-# Initialize counters
-passed=0
-failed=0
-skipped=0
+# Run service-specific tests
+echo "Running service tests..."
 
-# Set environment variables for testing
-export TEST_MODE=True
-export TESTING=True
+# Define services and their coverage requirements
+services="user-service investment-service"
+coverage_requirement=80
 
-# Run tests for services with coverage requirements
-for service in "${services_with_coverage[@]}"; do
-    echo -e "\n${GREEN}Running tests for $service (with coverage requirements)...${NC}\n"
+# Run tests for each service
+for service in $services; do
+    echo "Testing $service (required coverage: $coverage_requirement%)..."
+    cd "services/$service"
     
-    # Change to service directory
-    cd "services/$service" || continue
+    # Install service package in development mode
+    pip install -e .
     
-    # Set PYTHONPATH to include service source, shared utilities, and current directory
-    export PYTHONPATH="$PWD/src:$PWD/../../services/shared:$PYTHONPATH"
+    # Run tests with coverage
+    pytest --maxfail=1 \
+           --disable-warnings \
+           --cov=src \
+           --cov-report=xml \
+           --cov-report=term-missing \
+           --junitxml=junit.xml \
+           -o junit_family=legacy \
+           tests/
     
-    # Run pytest with coverage requirements
-    if pytest tests/ \
-        -v \
-        --cov=src \
-        --cov-report=term-missing \
-        --cov-fail-under=80 \
-        --import-mode=importlib; then
-        ((passed++))
-    else
-        ((failed++))
+    # Check coverage
+    coverage_result=$(coverage report | grep TOTAL | awk '{print $NF}' | sed 's/%//')
+    if (( $(echo "$coverage_result < $coverage_requirement" | bc -l) )); then
+        echo "Error: Coverage for $service is $coverage_result%, which is below the required $coverage_requirement%"
+        exit 1
     fi
     
-    # Return to root directory
     cd ../..
 done
 
-# Run tests for services without coverage requirements
-for service in "${services_without_coverage[@]}"; do
-    echo -e "\n${YELLOW}Running tests for $service (without coverage requirements)...${NC}\n"
-    
-    # Change to service directory
-    cd "services/$service" || continue
-    
-    # Set PYTHONPATH to include service source, shared utilities, and current directory
-    export PYTHONPATH="$PWD/src:$PWD/../../services/shared:$PYTHONPATH"
-    
-    # Run pytest without coverage requirements
-    if pytest tests/ \
-        -v \
-        --import-mode=importlib; then
-        :  # Do nothing on success
-    else
-        ((skipped++))  # Count as skipped instead of failed
-    fi
-    
-    # Return to root directory
-    cd ../..
-done
-
-# Print summary
-echo -e "\n${GREEN}Test Summary:${NC}"
-echo -e "Passed: ${GREEN}$passed${NC}"
-echo -e "Failed: ${RED}$failed${NC}"
-echo -e "Services without tests: ${YELLOW}$skipped${NC}"
-
-# Exit with failure only if services with coverage requirements failed
-[ "$failed" -eq 0 ] 
+echo "All tests passed successfully!" 

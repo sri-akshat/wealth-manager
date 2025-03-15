@@ -13,7 +13,8 @@ from .schemas.investment import (
     InvestmentResponse,
     PortfolioSummary,
     PortfolioInvestment,
-    PortfolioAnalytics
+    PortfolioAnalytics,
+    PortfolioInvestmentList
 )
 from datetime import datetime
 
@@ -56,6 +57,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/", tags=["system"])
+async def root():
+    """
+    Root endpoint that provides basic service information.
+    
+    Returns service name, version, and status.
+    """
+    return {
+        "service": settings.PROJECT_NAME,
+        "version": settings.VERSION,
+        "status": "healthy"
+    }
 
 @app.get("/portfolio/summary", response_model=PortfolioSummary, tags=["portfolio"])
 async def get_portfolio_summary(
@@ -197,7 +211,7 @@ async def create_investment(
     db.refresh(db_investment)
     return db_investment
 
-@app.get("/portfolio/investments", response_model=List[PortfolioInvestment], tags=["portfolio"])
+@app.get("/portfolio/investments", response_model=PortfolioInvestmentList, tags=["portfolio"])
 async def get_portfolio_investments(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id)
@@ -227,7 +241,7 @@ async def get_portfolio_investments(
             purchase_date=inv.purchase_date
         ))
 
-    return result
+    return PortfolioInvestmentList(investments=result)
 
 @app.get("/portfolio/analytics", response_model=PortfolioAnalytics, tags=["portfolio"])
 async def get_portfolio_analytics(
@@ -241,11 +255,11 @@ async def get_portfolio_analytics(
     in a single response for a complete portfolio overview.
     """
     summary = await get_portfolio_summary(db, user_id)
-    investments = await get_portfolio_investments(db, user_id)
+    investments_list = await get_portfolio_investments(db, user_id)
 
     return PortfolioAnalytics(
         summary=summary,
-        investments=investments
+        investments=investments_list.investments  # Access the investments field
     )
 
 @app.post("/investments/update-navs", tags=["investments"])
@@ -278,7 +292,3 @@ async def health_check():
     Returns a simple status message indicating the service is operational.
     """
     return {"status": "healthy", "service": "investment-service"}
-
-@app.get("/")
-async def root():
-    return {"message": "Investment Service API"}

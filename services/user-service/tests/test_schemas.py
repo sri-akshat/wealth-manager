@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 from pydantic import ValidationError
-from user_service.schemas.user import UserBase, UserCreate, UserResponse, Token
+from user_service.schemas.user import UserBase, UserCreate, User, Token
 from user_service.models.user import Role
 
 def test_user_base_valid():
@@ -51,7 +51,7 @@ def test_user_create_missing_password():
         UserCreate(email="test@example.com", full_name="Test User", role=Role.CUSTOMER)
 
 def test_user_response_valid():
-    """Test creating a valid UserResponse instance."""
+    """Test creating a valid User instance."""
     current_time = datetime.utcnow()
     user_data = {
         "id": 1,
@@ -61,7 +61,7 @@ def test_user_response_valid():
         "is_active": True,
         "created_at": current_time
     }
-    user = UserResponse(**user_data)
+    user = User(**user_data)
     assert user.id == 1
     assert user.email == "test@example.com"
     assert user.full_name == "Test User"
@@ -70,7 +70,7 @@ def test_user_response_valid():
     assert user.created_at == current_time
 
 def test_user_response_optional_last_login():
-    """Test UserResponse with optional last_login."""
+    """Test User with optional last_login."""
     current_time = datetime.utcnow()
     user_data = {
         "id": 1,
@@ -80,7 +80,7 @@ def test_user_response_optional_last_login():
         "is_active": True,
         "created_at": current_time
     }
-    user = UserResponse(**user_data)
+    user = User(**user_data)
     assert user.id == 1
     assert user.email == "test@example.com"
     assert user.full_name == "Test User"

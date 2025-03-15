@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "investment-service"
+version = "1.0.0"
+description = "Investment management service for wealth manager platform"
+requires-python = ">=3.8"
+dependencies = [
+    "fastapi>=0.100.0",
+    "sqlalchemy>=2.0.0",
+    "pydantic>=2.0.0",
+    "python-jose[cryptography]>=3.3.0",
+    "python-multipart>=0.0.6",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["investment_service*"] 

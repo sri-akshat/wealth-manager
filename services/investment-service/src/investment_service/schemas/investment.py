@@ -61,6 +61,12 @@ class PortfolioInvestment(BaseModel):
     class Config:
         from_attributes = True
 
+class PortfolioInvestmentList(BaseModel):
+    """
+    A list of portfolio investments.
+    """
+    investments: List[PortfolioInvestment]
+
 class PortfolioSummary(BaseModel):
     total_investment: float
     current_value: float

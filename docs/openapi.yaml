@@ -2,225 +2,184 @@ openapi: 3.0.0
 info:
   title: Wealth Manager API
   version: 1.0.0
-  description: Unified API documentation for the Wealth Manager platform
+  description: Combined API documentation for all Wealth Manager services
 paths:
-  /kyc/health:
+  /:
     get:
-      summary: health_check
-      description: null
-      tags: []
+      tags:
+      - system
+      summary: Root endpoint that provides basic service information.
+      description: Returns service name, version, and status.
       responses:
         '200':
-          description: Successful Response
-  /kyc/:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                  version:
+                    type: string
+                  status:
+                    type: string
+  /health:
     get:
-      summary: root
-      description: null
-      tags: []
+      tags:
+      - system
+      summary: Health check endpoint.
+      description: Check if the service is healthy.
       responses:
         '200':
-          description: Successful Response
-  /investments/portfolio/summary:
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+  /portfolio/summary:
     get:
-      summary: get_portfolio_summary
-      description: "Get summary of user's investment portfolio.\n    \n    Returns:\n\
-        \    - Total investment amount\n    - Current portfolio value\n    - Total\
-        \ returns (absolute and percentage)\n    - Number of investments\n    - Asset\
-        \ allocation by fund category"
       tags:
       - portfolio
+      summary: Get summary of user's investment portfolio.
+      description: "Get summary of user's investment portfolio.\n    \n    Returns\
+        \ total investment, current value, returns, and asset allocation."
       responses:
         '200':
-          description: Successful Response
-  /investments/initialize-sample-data:
+          description: Successful response
+          content:
+            application/json:
+              schema: {}
+  /initialize-sample-data:
     post:
-      summary: initialize_data
+      tags:
+      - system
+      summary: Initialize sample mutual fund data for testing.
       description: "Initialize sample mutual fund data for testing.\n    \n    This\
         \ endpoint adds a set of predefined mutual funds to the database\n    if they\
         \ don't already exist."
-      tags:
-      - system
       responses:
         '200':
-          description: Successful Response
-  /investments/investments:
+          description: Successful response
+          content:
+            application/json:
+              schema: {}
+  /investments/:
     post:
-      summary: create_investment
-      description: "Create a new investment for the current user.\n    \n    Args:\n\
-        \        investment: Investment details including fund_id and purchase amount\n\
-        \        \n    Returns:\n        The created investment with all details\n\
-        \        \n    Raises:\n        404: If the specified fund is not found"
       tags:
       - investments
+      summary: Create a new investment for the user.
+      description: "Create a new investment for the user.\n    \n    Takes investment\
+        \ details and creates a new investment record."
       responses:
         '200':
-          description: Successful Response
-  /investments/portfolio/investments:
+          description: Successful response
+          content:
+            application/json:
+              schema: {}
+  /portfolio/investments:
     get:
-      summary: get_portfolio_investments
+      tags:
+      - portfolio
+      summary: Get detailed list of user's investments.
       description: "Get detailed list of user's investments.\n    \n    Returns a\
         \ list of all investments in the user's portfolio with calculated\n    returns\
         \ and current values."
-      tags:
-      - portfolio
       responses:
         '200':
-          description: Successful Response
-  /investments/portfolio/analytics:
+          description: Successful response
+          content:
+            application/json:
+              schema: {}
+  /portfolio/analytics:
     get:
-      summary: get_portfolio_analytics
+      tags:
+      - portfolio
+      summary: Get comprehensive portfolio analytics including summary and investments.
       description: "Get comprehensive portfolio analytics including summary and investments.\n\
         \    \n    This endpoint combines portfolio summary and detailed investment\
         \ information\n    in a single response for a complete portfolio overview."
-      tags:
-      - portfolio
       responses:
         '200':
-          description: Successful Response
-  /investments/investments/update-navs:
+          description: Successful response
+          content:
+            application/json:
+              schema: {}
+  /investments/update-navs:
     post:
-      summary: update_investment_navs
+      tags:
+      - investments
+      summary: Update current NAVs and values for all investments.
       description: "Update current NAVs and values for all investments.\n    \n  \
         \  This endpoint recalculates the current value of all investments\n    based\
         \ on the latest NAV data. In a production environment,\n    this would fetch\
         \ real-time NAV data from an external API."
-      tags:
-      - investments
       responses:
         '200':
-          description: Successful Response
-  /investments/health:
-    get:
-      summary: health_check
-      description: "Check if the service is healthy.\n    \n    Returns a simple status\
-        \ message indicating the service is operational."
-      tags:
-      - system
-      responses:
-        '200':
-          description: Successful Response
-  /investments/:
-    get:
-      summary: root
-      description: null
-      tags: []
-      responses:
-        '200':
-          description: Successful Response
-  /transactions/health:
-    get:
-      summary: health_check
-      description: null
-      tags: []
-      responses:
-        '200':
-          description: Successful Response
-  /transactions/:
-    get:
-      summary: root
-      description: null
-      tags: []
-      responses:
-        '200':
-          description: Successful Response
-  /admin/health:
-    get:
-      summary: health_check
-      description: null
-      tags: []
-      responses:
-        '200':
-          description: Successful Response
-  /admin/:
-    get:
-      summary: root
-      description: null
-      tags: []
-      responses:
-        '200':
-          description: Successful Response
-  /notifications/health:
-    get:
-      summary: health_check
-      description: null
-      tags: []
-      responses:
-        '200':
-          description: Successful Response
-  /notifications/:
-    get:
-      summary: root
-      description: null
-      tags: []
-      responses:
-        '200':
-          description: Successful Response
-  /users/health:
-    get:
-      summary: health_check
-      description: "Check if the service is healthy.\n    \n    Returns a simple status\
-        \ message indicating the service is operational."
-      tags:
-      - system
-      responses:
-        '200':
-          description: Successful Response
-  /users/register:
+          description: Successful response
+          content:
+            application/json:
+              schema: {}
+  /register:
     post:
-      summary: create_user
-      description: "Register a new user.\n    \n    Args:\n        user: User details\
-        \ including email, password, full name, and role\n        \n    Returns:\n\
-        \        The created user without sensitive information\n        \n    Raises:\n\
-        \        400: If the email is already registered"
       tags:
       - users
+      summary: Register a new user.
+      description: "Register a new user.\n    \n    Creates a new user account with\
+        \ the provided details and optionally returns\n    an access token for immediate\
+        \ authentication."
       responses:
-        '200':
-          description: Successful Response
-  /users/token:
+        '400':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /token:
     post:
-      summary: login
-      description: "Authenticate a user and return an access token.\n    \n    Args:\n\
-        \        form_data: OAuth2 form with username (email) and password\n     \
-        \   \n    Returns:\n        JWT access token with type\n        \n    Raises:\n\
-        \        401: If credentials are invalid"
       tags:
       - auth
+      summary: Authenticate a user and return an access token.
+      description: "Authenticate a user and return an access token.\n    \n    Validates\
+        \ the user's credentials and returns a JWT token along with the user's profile."
       responses:
-        '200':
-          description: Successful Response
-  /users/users/me:
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/me:
     get:
-      summary: read_users_me
+      tags:
+      - users
+      summary: Get the current authenticated user's profile.
       description: "Get the current authenticated user's profile.\n    \n    Returns\
-        \ the profile information of the currently logged-in user.\n    \n    Raises:\n\
-        \        401: If the token is invalid\n        404: If user not found"
+        \ the complete profile information of the currently logged-in user."
+      responses:
+        '401':
+          description: Invalid authentication token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users:
+    get:
       tags:
       - users
+      summary: Get a list of all users (admin only).
+      description: "Get a list of all users (admin only).\n    \n    Returns a paginated\
+        \ list of user profiles. Only accessible by administrators."
       responses:
-        '200':
-          description: Successful Response
-  /users/users:
-    get:
-      summary: read_users
-      description: "Get a list of all users (admin only).\n    \n    Args:\n     \
-        \   skip: Number of records to skip for pagination\n        limit: Maximum\
-        \ number of records to return\n        \n    Returns:\n        List of user\
-        \ profiles\n        \n    Raises:\n        401: If the token is invalid\n\
-        \        403: If the user is not an admin"
-      tags:
-      - users
-      responses:
-        '200':
-          description: Successful Response
-  /gateway/health:
-    get:
-      summary: health_check
-      description: null
-      tags: []
-      responses:
-        '200':
-          description: Successful Response
+        '401':
+          description: Invalid authentication token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 tags:
 - name: portfolio
   description: Operations related to investment portfolios
@@ -228,7 +187,266 @@ tags:
   description: Operations for managing individual investments
 - name: system
   description: System maintenance operations
-- name: users
-  description: Operations with users and profiles
-- name: auth
-  description: Authentication operations
+components:
+  schemas:
+    MutualFundBase:
+      type: object
+      properties:
+        scheme_code:
+          type: string
+        scheme_name:
+          type: string
+        category:
+          type: string
+        nav:
+          type: number
+        aum:
+          type: number
+        risk_level:
+          type: string
+        expense_ratio:
+          type: number
+      description: ''
+    MutualFundCreate:
+      type: object
+      properties: {}
+      description: ''
+    MutualFundResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        last_updated:
+          type: string
+          format: date-time
+      description: ''
+    InvestmentBase:
+      type: object
+      properties:
+        fund_id:
+          type: integer
+        purchase_amount:
+          type: number
+      description: ''
+    InvestmentCreate:
+      type: object
+      properties: {}
+      description: ''
+    InvestmentResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        fund_id:
+          type: integer
+        units:
+          type: number
+        purchase_nav:
+          type: number
+        current_nav:
+          type: number
+        purchase_amount:
+          type: number
+        current_value:
+          type: number
+        purchase_date:
+          type: string
+          format: date-time
+        status:
+          type: string
+      description: ''
+    PortfolioInvestment:
+      type: object
+      properties:
+        id:
+          type: integer
+        fund_name:
+          type: string
+        category:
+          type: string
+        units:
+          type: number
+        purchase_nav:
+          type: number
+        current_nav:
+          type: number
+        purchase_amount:
+          type: number
+        current_value:
+          type: number
+        returns:
+          type: number
+        returns_percentage:
+          type: number
+        purchase_date:
+          type: string
+          format: date-time
+      description: ''
+    PortfolioInvestmentList:
+      type: object
+      properties:
+        investments:
+          type: string
+      description: A list of portfolio investments.
+    PortfolioSummary:
+      type: object
+      properties:
+        total_investment:
+          type: number
+        current_value:
+          type: number
+        total_returns:
+          type: number
+        returns_percentage:
+          type: number
+        number_of_investments:
+          type: integer
+        asset_allocation:
+          type: string
+      description: ''
+    PortfolioAnalytics:
+      type: object
+      properties:
+        summary:
+          type: string
+        investments:
+          type: string
+      description: ''
+    InvestmentFilter:
+      type: object
+      properties:
+        category:
+          type: string
+          nullable: true
+        min_amount:
+          type: number
+          nullable: true
+        max_amount:
+          type: number
+          nullable: true
+        start_date:
+          type: string
+          nullable: true
+          format: date-time
+        end_date:
+          type: string
+          nullable: true
+          format: date-time
+      description: ''
+    UserBase:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+        full_name:
+          type: string
+          description: User's full name
+        role:
+          type: string
+          description: User's role in the system
+      description: Base user schema with common fields.
+    UserCreate:
+      type: object
+      properties:
+        password:
+          type: string
+          description: User's password
+          minLength: 8
+      description: Schema for user registration request.
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: User's unique identifier
+        is_active:
+          type: boolean
+          description: Whether the user account is active
+        created_at:
+          type: string
+          format: date-time
+          description: When the user account was created
+      description: Schema for user response.
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+        password:
+          type: string
+          description: User's password
+      description: Schema for login request.
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT access token
+        token_type:
+          type: string
+          description: Token type
+        user:
+          type: string
+          description: User details
+      description: Schema for successful login response.
+    RegisterResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          nullable: true
+          description: JWT access token if auto-login is enabled
+        user:
+          type: string
+          description: Created user details
+      description: Schema for successful registration response.
+    UserList:
+      type: object
+      properties:
+        users:
+          type: string
+          description: List of users
+        total:
+          type: integer
+          description: Total number of users
+        skip:
+          type: integer
+          description: Number of users skipped
+        limit:
+          type: integer
+          description: Maximum number of users returned
+      description: Schema for list of users response.
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Error message
+        status_code:
+          type: integer
+          description: HTTP status code
+        error_type:
+          type: string
+          description: Type of error
+      description: Schema for error responses.
+    Token:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT access token
+        token_type:
+          type: string
+          description: Token type
+      description: Schema for JWT token response.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

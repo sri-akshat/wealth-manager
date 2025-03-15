@@ -32,7 +32,7 @@ def test_get_portfolio_investments(client, sample_investments, test_user, test_u
     assert response.status_code == 200
     
     data = response.json()
-    investments = [PortfolioInvestment(**inv) for inv in data]
+    investments = [PortfolioInvestment(**inv) for inv in data["investments"]]  # Access the investments field
     
     assert len(investments) == len(sample_investments)
     assert all(inv.category in [FundCategory.EQUITY, FundCategory.DEBT] for inv in investments)

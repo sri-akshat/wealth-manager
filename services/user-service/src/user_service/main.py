@@ -4,7 +4,15 @@ from sqlalchemy.orm import Session
 from .core.security import verify_password, get_password_hash, create_access_token, SECRET_KEY, ALGORITHM
 from .core.database import get_db, Base, engine
 from .models.user import User, Role
-from .schemas.user import UserCreate, UserResponse, Token, TokenData
+from .schemas.user import (
+    UserCreate,
+    User as UserSchema,
+    LoginRequest,
+    LoginResponse,
+    RegisterResponse,
+    UserList,
+    ErrorResponse
+)
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -41,40 +49,46 @@ app = FastAPI(
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-@app.get("/health")
+@app.get("/", tags=["system"])
+async def root():
+    """
+    Root endpoint that provides basic service information.
+    
+    Returns service name, version, and status.
+    """
+    return {
+        "service": "User Service",
+        "version": "1.0.0",
+        "status": "healthy"
+    }
+
+@app.get("/health", tags=["system"])
 def health_check():
+    """Check if the service is healthy."""
     return {"status": "ok"}
 
-@app.post("/users/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = User(
-        email=user.email,
-        hashed_password=get_password_hash(user.password),
-        full_name=user.full_name,
-        role=user.role
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
-
-@app.post("/register", response_model=UserResponse, tags=["users"])
+@app.post(
+    "/register",
+    response_model=RegisterResponse,
+    tags=["users"],
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        400: {"model": ErrorResponse, "description": "Email already registered"},
+    }
+)
 async def register_user(user: UserCreate, db: Session = Depends(get_db)):
     """
     Register a new user.
     
-    Args:
-        user: User details including email, password, full name, and role
-        
-    Returns:
-        The created user without sensitive information
-        
-    Raises:
-        400: If the email is already registered
+    Creates a new user account with the provided details and optionally returns
+    an access token for immediate authentication.
     """
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(
+            status_code=400,
+            detail="Email already registered"
+        )
 
     db_user = User(
         email=user.email,
@@ -85,24 +99,33 @@ async def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    return db_user
 
-@app.post("/token", response_model=Token, tags=["auth"])
-async def login_for_access_token(
-        form_data: OAuth2PasswordRequestForm = Depends(),
-        db: Session = Depends(get_db)
+    # Create access token for auto-login
+    access_token = create_access_token(
+        data={"sub": db_user.email, "role": db_user.role.value}
+    )
+
+    return RegisterResponse(
+        access_token=access_token,
+        user=db_user
+    )
+
+@app.post(
+    "/token",
+    response_model=LoginResponse,
+    tags=["auth"],
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid credentials"},
+    }
+)
+async def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
 ):
     """
     Authenticate a user and return an access token.
     
-    Args:
-        form_data: OAuth2 form with username (email) and password
-        
-    Returns:
-        JWT access token with type
-        
-    Raises:
-        401: If credentials are invalid
+    Validates the user's credentials and returns a JWT token along with the user's profile.
     """
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -112,70 +135,96 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token_expires = timedelta(minutes=30)
     access_token = create_access_token(
-        data={"sub": user.email, "role": user.role.value},
-        expires_delta=access_token_expires
+        data={"sub": user.email, "role": user.role.value}
     )
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return LoginResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=user
+    )
 
-@app.get("/users/me", response_model=UserResponse, tags=["users"])
-async def read_users_me(
-        token: str = Depends(oauth2_scheme),
-        db: Session = Depends(get_db)
+@app.get(
+    "/users/me",
+    response_model=UserSchema,
+    tags=["users"],
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid authentication token"},
+        404: {"model": ErrorResponse, "description": "User not found"}
+    }
+)
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
 ):
     """
     Get the current authenticated user's profile.
     
-    Returns the profile information of the currently logged-in user.
-    
-    Raises:
-        401: If the token is invalid
-        404: If user not found
+    Returns the complete profile information of the currently logged-in user.
     """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
-            raise HTTPException(status_code=401, detail="Invalid authentication token")
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid authentication token"
+            )
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid authentication token")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication token"
+        )
 
     user = db.query(User).filter(User.email == email).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
     return user
 
-@app.get("/users", response_model=List[UserResponse], tags=["users"])
-async def get_users(
-        skip: int = 0,
-        limit: int = 100,
-        token: str = Depends(oauth2_scheme),
-        db: Session = Depends(get_db)
+@app.get(
+    "/users",
+    response_model=UserList,
+    tags=["users"],
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid authentication token"},
+        403: {"model": ErrorResponse, "description": "Not authorized"}
+    }
+)
+async def list_users(
+    skip: int = 0,
+    limit: int = 100,
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
 ):
     """
     Get a list of all users (admin only).
     
-    Args:
-        skip: Number of records to skip for pagination
-        limit: Maximum number of records to return
-        
-    Returns:
-        List of user profiles
-        
-    Raises:
-        401: If the token is invalid
-        403: If the user is not an admin
+    Returns a paginated list of user profiles. Only accessible by administrators.
     """
-    # Verify admin access
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         role = payload.get("role")
-        if role != Role.ADMIN:
-            raise HTTPException(status_code=403, detail="Not authorized")
+        if role != Role.ADMIN.value:
+            raise HTTPException(
+                status_code=403,
+                detail="Not authorized"
+            )
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid authentication token")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication token"
+        )
 
+    total = db.query(User).count()
     users = db.query(User).offset(skip).limit(limit).all()
-    return users
+    
+    return UserList(
+        users=users,
+        total=total,
+        skip=skip,
+        limit=limit
+    )
