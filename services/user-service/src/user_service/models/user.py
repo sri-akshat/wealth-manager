@@ -7,6 +7,7 @@ from ..core.database import Base
 class Role(str, PyEnum):
     ADMIN = "admin"
     CUSTOMER = "customer"
+    DISTRIBUTOR = "distributor"
 
 class User(Base):
     __tablename__ = "users"
