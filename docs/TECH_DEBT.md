@@ -12,6 +12,7 @@
 - [ ] Migrate from datetime.utcnow() to datetime.now(datetime.UTC)
 - [ ] Update Pydantic v1 style validators to v2 syntax
 - [ ] Add input validation for all API endpoints
+- [ ] investor service should refer to investor Id instead of user Id
 
 ## Medium Priority
 
