@@ -30,7 +30,8 @@ def test_user_role_values():
     """Test Role enum values."""
     assert Role.CUSTOMER.value == "customer"
     assert Role.ADMIN.value == "admin"
-    assert len(Role) == 2
+    assert Role.DISTRIBUTOR.value == "distributor"
+    assert len(Role) == 3
 
 def test_user_role_comparison():
     """Test Role comparison."""
