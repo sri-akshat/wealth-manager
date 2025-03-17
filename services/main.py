@@ -36,55 +36,79 @@ def create_module(name: str, path: str) -> types.ModuleType:
     
     return module
 
-# Function to import app from a service directory
-def import_app_from_service(service_name: str):
+def import_app_from_service(service_name: str) -> FastAPI:
+    """Import FastAPI app from a service, return dummy app if service doesn't exist."""
+    module_name = service_name.replace('-', '_')
     service_dir = services_dir / service_name
     src_dir = service_dir / "src"
-    service_path = src_dir / "main.py"
-    module_name = service_name.replace('-', '_')
+    service_path = src_dir / module_name / "main.py"
+    
+    # If service directory doesn't exist, return a dummy app
+    if not service_dir.exists():
+        dummy_app = FastAPI(title=f"{service_name} (Not Implemented)")
+        @dummy_app.get("/")
+        def service_not_implemented():
+            return {"status": "not_implemented", "message": f"{service_name} is not implemented yet"}
+        return dummy_app
     
     # Ensure all directories have __init__.py files
     ensure_init_files(service_dir)
+    ensure_init_files(src_dir)
+    ensure_init_files(src_dir / module_name)
     
     # Set up the module hierarchy with proper specs
     root_module = create_module(module_name, str(service_dir))
     sys.modules[module_name] = root_module
     
-    src_module = create_module(f"{module_name}.src", str(src_dir))
-    sys.modules[f"{module_name}.src"] = src_module
+    src_module = create_module(f"{module_name}", str(src_dir / module_name))
+    sys.modules[f"{module_name}"] = src_module
     
     # Import the main module
     spec = importlib.util.spec_from_file_location(
-        f"{module_name}.src.main",
+        f"{module_name}.main",
         service_path
     )
+    if not spec or not spec.loader:
+        dummy_app = FastAPI(title=f"{service_name} (Error)")
+        @dummy_app.get("/")
+        def service_error():
+            return {"status": "error", "message": f"Could not load {service_name}"}
+        return dummy_app
+        
     module = importlib.util.module_from_spec(spec)
-    module.__package__ = f"{module_name}.src"
-    sys.modules[f"{module_name}.src.main"] = module
-    
-    # Add the src directory to sys.path temporarily
-    if str(src_dir) not in sys.path:
-        sys.path.insert(0, str(src_dir))
+    module.__package__ = module_name
+    sys.modules[f"{module_name}.main"] = module
     
     try:
         spec.loader.exec_module(module)
         return module.app
-    finally:
-        # Remove the src directory from sys.path
-        if str(src_dir) in sys.path:
-            sys.path.remove(str(src_dir))
+    except Exception as e:
+        print(f"Error loading {service_name}: {str(e)}")
+        dummy_app = FastAPI(title=f"{service_name} (Error)")
+        @dummy_app.get("/")
+        def service_error():
+            return {"status": "error", "message": str(e)}
+        return dummy_app
 
 # Import service applications
-try:
-    investment_app = import_app_from_service("investment-service")
-    user_app = import_app_from_service("user-service")
-    transaction_app = import_app_from_service("transaction-service")
-    kyc_app = import_app_from_service("kyc-service")
-    admin_app = import_app_from_service("admin-service")
-    notification_app = import_app_from_service("notification-service")
-except Exception as e:
-    print(f"Error importing services: {str(e)}")
-    raise
+service_apps = {}
+for service_name in [
+    "investment-service",
+    "user-service",
+    "transaction-service",
+    "kyc-service",
+    "admin-service",
+    "notification-service"
+]:
+    try:
+        service_apps[service_name] = import_app_from_service(service_name)
+    except Exception as e:
+        print(f"Error importing {service_name}: {str(e)}")
+        dummy_app = FastAPI(title=f"{service_name} (Error)")
+        @dummy_app.get("/")
+        def service_error():
+            return {"status": "error", "message": str(e)}
+        service_apps[service_name] = dummy_app
 
 app = FastAPI(
     title="Wealth Manager",
@@ -102,12 +126,12 @@ app.add_middleware(
 )
 
 # Mount service applications
-app.mount("/investments", investment_app)
-app.mount("/users", user_app)
-app.mount("/transactions", transaction_app)
-app.mount("/kyc", kyc_app)
-app.mount("/admin", admin_app)
-app.mount("/notifications", notification_app)
+app.mount("/investments", service_apps["investment-service"])
+app.mount("/users", service_apps["user-service"])
+app.mount("/transactions", service_apps["transaction-service"])
+app.mount("/kyc", service_apps["kyc-service"])
+app.mount("/admin", service_apps["admin-service"])
+app.mount("/notifications", service_apps["notification-service"])
 
 # Health check endpoint
 @app.get("/health")
@@ -115,12 +139,12 @@ async def health_check():
     return {
         "status": "healthy",
         "services": {
-            "investment": "up",
-            "user": "up",
-            "transaction": "up",
-            "kyc": "up",
-            "admin": "up",
-            "notification": "up"
+            "investment": "up" if "investment-service" in service_apps else "not_implemented",
+            "user": "up" if "user-service" in service_apps else "not_implemented",
+            "transaction": "up" if "transaction-service" in service_apps else "not_implemented",
+            "kyc": "up" if "kyc-service" in service_apps else "not_implemented",
+            "admin": "up" if "admin-service" in service_apps else "not_implemented",
+            "notification": "up" if "notification-service" in service_apps else "not_implemented"
         }
     }
 
