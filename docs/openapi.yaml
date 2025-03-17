@@ -181,6 +181,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 tags:
+- name: portfolio
+  description: Operations related to investment portfolios
+- name: investments
+  description: Operations for managing individual investments
 - name: system
   description: System maintenance operations
 components:
