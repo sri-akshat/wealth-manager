@@ -28,6 +28,9 @@ def test_settings_from_env(monkeypatch):
 
 def test_settings_env_file():
     settings = Settings()
-    assert settings.model_config["env_file"] == ".env"
+    # We're now manually loading .env files, so env_file should be None
+    assert settings.model_config["env_file"] is None
     assert settings.model_config["env_file_encoding"] == "utf-8"
-    assert settings.model_config["case_sensitive"] is False 
+    assert settings.model_config["case_sensitive"] is False
+    # Check that extra fields are ignored
+    assert settings.model_config["extra"] == "ignore" 
