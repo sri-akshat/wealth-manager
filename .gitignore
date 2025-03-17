@@ -14,6 +14,13 @@ env/**
 ENV/
 ENV/**
 
+# Environment Variables - ensure ALL .env files are ignored
+**/.env
+**/env
+services/.env
+services/*/.env
+services/*/*/.env
+
 # Python
 __pycache__/
 *.py[cod]
@@ -52,3 +59,7 @@ htmlcov/
 *.db
 junit.xml
 .pytest_cache/
+
+# Logs
+*.log
+logs/

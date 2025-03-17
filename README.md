@@ -69,6 +69,53 @@ createdb wealthdb
 DATABASE_URL=postgresql://username:password@localhost:5432/wealthdb
 ```
 
+### Environment Variables Setup
+
+The project uses multiple `.env` files to manage environment variables across different components:
+
+#### Setting Up Environment Files
+
+All `.env` files are excluded from git (via `.gitignore`) to prevent accidental commit of secrets. 
+Use the provided script to generate template files:
+
+```bash
+# Generate all template .env files
+./scripts/setup_env_templates.sh
+```
+
+#### Structure of Environment Files
+
+1. **Root `.env`**: Project-wide configuration
+   - GitHub and Codecov tokens
+   - Main API configuration
+   - Global settings
+
+2. **`services/.env`**: Common settings for all services
+   - Database connection
+   - Authentication settings 
+   - Inter-service communication URLs
+   - Logging configuration
+
+3. **Service-specific `.env` files** (e.g., `services/user-service/.env`):
+   - Settings unique to each service
+   - Service port numbers
+   - Feature flags
+   - Service-specific API keys
+
+When a setting exists in multiple files, the most specific one takes precedence 
+(service-specific > services > root).
+
+#### Critical Environment Variables
+
+These variables should be updated with your actual values:
+
+| Variable | Location | Description |
+|----------|----------|-------------|
+| `GITHUB_TOKEN` | Root `.env` | GitHub personal access token for CI/CD |
+| `CODECOV_TOKEN` | Root `.env` | Codecov token for test coverage reporting |
+| `JWT_SECRET_KEY` | `services/.env` | Secret key for JWT authentication |
+| `DATABASE_URL` | `services/.env` | PostgreSQL connection string |
+
 ### Running the Application
 
 There are multiple ways to run the application:
