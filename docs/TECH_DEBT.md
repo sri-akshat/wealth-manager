@@ -37,7 +37,7 @@
 - [ ] Set up pre-commit hooks for code formatting
 - [ ] Add development containers configuration
 - [ ] Improve error messages and debugging information
-- [ ] 2.⁠ ⁠needs to be included in requirements pip3 install pydantic-settings
+- [ ] pydantic-settings needs to be included in requirements
 - [ ] ⁠OpenAPI documentation does not create request body. - need to be fixed.
 - [ ] ⁠create a test script to pre-load test data when the database is getting created ??
 
