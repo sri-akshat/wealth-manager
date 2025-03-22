@@ -18,9 +18,8 @@ from .schemas.investment import (
 )
 from datetime import datetime
 
-# Create tables if not in test mode
-if not settings.TEST_MODE:
-    Base.metadata.create_all(bind=engine)
+# Create tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

@@ -1,9 +1,13 @@
 """Test fixtures for user service."""
+import os
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+
+# Set test mode environment variable before importing modules
+os.environ['TEST_MODE'] = 'true'
 
 from user_service.core.database import Base, get_db
 from user_service.core.config import settings
@@ -11,7 +15,7 @@ from user_service.main import app
 from user_service.models.user import User, Role
 from user_service.core.security import get_password_hash, create_access_token
 
-# Set test mode
+# Ensure test mode flag is set
 settings.TEST_MODE = True
 
 # Create test database

@@ -1,4 +1,5 @@
 """Test fixtures for investment service."""
+import os
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -11,7 +12,10 @@ from investment_service.main import app
 from investment_service.models.investment import MutualFund, Investment, FundCategory, InvestmentStatus
 from investment_service.core.auth import create_test_token
 
-# Set test mode
+# Set test mode environment variable before importing modules
+os.environ['TEST_MODE'] = 'true'
+
+# Ensure test mode flag is set
 settings.TEST_MODE = True
 
 # Create test database
