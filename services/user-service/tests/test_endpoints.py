@@ -132,4 +132,8 @@ def test_health_check(client):
     """Test health check endpoint."""
     response = client.get("/health")
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {"status": "ok"} 
+    data = response.json()
+    assert data["message"] == "Service is operational"
+    assert data["service"] == "User Service"
+    assert data["version"] == "1.0.0"
+    assert data["status"] == "healthy" 

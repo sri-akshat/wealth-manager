@@ -20,7 +20,8 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /health:
     get:
       tags:
@@ -33,7 +34,8 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /register:
     post:
       tags:
@@ -255,14 +257,39 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    MessageResponse:
+      properties:
+        message:
+          type: string
+          title: Message
+          description: Response message
+        service:
+          type: string
+          title: Service
+          description: Service name
+        version:
+          type: string
+          title: Version
+          description: Service version
+        status:
+          type: string
+          title: Status
+          description: Service status
+      type: object
+      required:
+      - message
+      - service
+      - version
+      - status
+      title: MessageResponse
+      description: Schema for service status and information responses.
     RegisterResponse:
       properties:
         access_token:
-          anyOf:
-          - type: string
-          - type: 'null'
+          type: string
           title: Access Token
           description: JWT access token if auto-login is enabled
+          nullable: true
         user:
           $ref: '#/components/schemas/User'
           description: Created user details
@@ -425,9 +452,7 @@ components:
       properties:
         loc:
           items:
-            anyOf:
-            - type: string
-            - type: integer
+            type: string
           type: array
           title: Location
         msg:

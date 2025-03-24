@@ -12,7 +12,8 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /:
     get:
       summary: Root
@@ -22,4 +23,28 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+components:
+  schemas:
+    MessageResponse:
+      properties:
+        message:
+          type: string
+          title: Message
+        service:
+          type: string
+          title: Service
+        version:
+          type: string
+          title: Version
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - message
+      - service
+      - version
+      - status
+      title: MessageResponse

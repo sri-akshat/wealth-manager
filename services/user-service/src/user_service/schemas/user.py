@@ -64,3 +64,18 @@ class TokenResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class MessageResponse(BaseModel):
+    """Schema for service status and information responses."""
+    message: str = Field(..., description="Response message")
+    service: str = Field(..., description="Service name")
+    version: str = Field(..., description="Service version")
+    status: str = Field(..., description="Service status")
+
+class ValidationError(BaseModel):
+    loc: List[str]
+    msg: str
+    type: str
+
+class HTTPValidationError(BaseModel):
+    detail: List[ValidationError]

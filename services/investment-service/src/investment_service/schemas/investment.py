@@ -96,7 +96,7 @@ class MessageResponse(BaseModel):
     """
     A simple message response schema.
     """
-    message: Optional[str] = None
-    service: Optional[str] = None
-    version: Optional[str] = None
-    status: Optional[str] = None
+    message: str
+    service: str
+    version: str
+    status: str

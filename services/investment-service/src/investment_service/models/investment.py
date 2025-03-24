@@ -38,7 +38,7 @@ class Investment(Base):
     __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer)
+    user_id = Column(String)
     fund_id = Column(Integer, ForeignKey("mutual_funds.id"))
     units = Column(Float)
     purchase_nav = Column(Float)

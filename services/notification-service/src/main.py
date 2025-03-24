@@ -1,7 +1,14 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
-app = FastAPI(title="Notification Service")
+class MessageResponse(BaseModel):
+    message: str
+    service: str
+    version: str
+    status: str
+
+app = FastAPI(title="Notification Service", version="0.1.0")
 
 # Configure CORS
 app.add_middleware(
@@ -12,10 +19,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/health")
+@app.get("/health", response_model=MessageResponse)
 async def health_check():
-    return {"status": "healthy", "service": "notification"}
+    return MessageResponse(
+        message="Service is operational",
+        service="Notification Service",
+        version="0.1.0",
+        status="healthy"
+    )
 
-@app.get("/")
+@app.get("/", response_model=MessageResponse)
 async def root():
-    return {"message": "Notification Service API"}
+    return MessageResponse(
+        message="Notification Service API",
+        service="Notification Service",
+        version="0.1.0",
+        status="healthy"
+    )

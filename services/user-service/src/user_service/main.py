@@ -2,9 +2,12 @@ from fastapi import FastAPI, HTTPException, Depends, status, Security
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, SecurityScopes
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.openapi.utils import get_openapi
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy.orm import Session
 from .core.security import verify_password, get_password_hash, create_access_token, SECRET_KEY, ALGORITHM
 from .core.database import get_db, Base, engine
+from .core.exceptions import http_exception_handler, validation_exception_handler
 from .models.user import User, Role
 from .schemas.user import (
     UserBase,
@@ -15,11 +18,16 @@ from .schemas.user import (
     RegisterResponse,
     UserList,
     ErrorResponse,
-    TokenResponse
+    TokenResponse,
+    MessageResponse,
+    ValidationError,
+    HTTPValidationError
 )
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import List, Optional
+from fastapi.middleware.cors import CORSMiddleware
+from .core.config import settings
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -30,10 +38,25 @@ def custom_openapi():
     
     openapi_schema = get_openapi(
         title="User Service",
-        version="1.0.0",
+        version=settings.VERSION,
         description="User management service for wealth manager platform. Handles user registration, authentication, and profile management.",
         routes=app.routes,
     )
+
+    # Ensure ValidationError schema has correct type for loc
+    if "ValidationError" in openapi_schema["components"]["schemas"]:
+        openapi_schema["components"]["schemas"]["ValidationError"]["properties"]["loc"]["items"] = {
+            "type": "string"
+        }
+
+    # Ensure RegisterResponse schema has correct type for access_token
+    if "RegisterResponse" in openapi_schema["components"]["schemas"]:
+        openapi_schema["components"]["schemas"]["RegisterResponse"]["properties"]["access_token"] = {
+            "type": "string",
+            "title": "Access Token",
+            "description": "JWT access token if auto-login is enabled",
+            "nullable": True
+        }
 
     # Add OAuth2 password flow security scheme
     openapi_schema["components"]["securitySchemes"] = {
@@ -61,7 +84,7 @@ def custom_openapi():
 app = FastAPI(
     title="User Service",
     description="User management service for wealth manager platform. Handles user registration, authentication, and profile management.",
-    version="1.0.0",
+    version=settings.VERSION,
     contact={
         "name": "Wealth Manager Team",
         "url": "https://github.com/sri-akshat/wealth-manager",
@@ -85,6 +108,10 @@ app = FastAPI(
     ]
 )
 
+# Add exception handlers
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+
 # Configure OAuth2 password flow
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="token",
@@ -98,23 +125,29 @@ oauth2_scheme = OAuth2PasswordBearer(
 # Override the default OpenAPI schema
 app.openapi = custom_openapi
 
-@app.get("/", tags=["system"])
+@app.get("/", response_model=MessageResponse, tags=["system"])
 async def root():
     """
     Root endpoint that provides basic service information.
     
     Returns service name, version, and status.
     """
-    return {
-        "service": "User Service",
-        "version": "1.0.0",
-        "status": "healthy"
-    }
+    return MessageResponse(
+        message="User Service API",
+        service="User Service",
+        version="1.0.0",
+        status="healthy"
+    )
 
-@app.get("/health", tags=["system"])
+@app.get("/health", response_model=MessageResponse, tags=["system"])
 def health_check():
     """Check if the service is healthy."""
-    return {"status": "ok"}
+    return MessageResponse(
+        message="Service is operational",
+        service="User Service",
+        version="1.0.0",
+        status="healthy"
+    )
 
 @app.post(
     "/register",

@@ -155,7 +155,8 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
       security:
       - OAuth2PasswordBearer: []
   /health:
@@ -173,7 +174,8 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
 components:
   schemas:
     FundCategory:
@@ -264,26 +266,23 @@ components:
     MessageResponse:
       properties:
         message:
-          anyOf:
-          - type: string
-          - type: 'null'
+          type: string
           title: Message
         service:
-          anyOf:
-          - type: string
-          - type: 'null'
+          type: string
           title: Service
         version:
-          anyOf:
-          - type: string
-          - type: 'null'
+          type: string
           title: Version
         status:
-          anyOf:
-          - type: string
-          - type: 'null'
+          type: string
           title: Status
       type: object
+      required:
+      - message
+      - service
+      - version
+      - status
       title: MessageResponse
       description: A simple message response schema.
     PortfolioAnalytics:

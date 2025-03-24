@@ -16,27 +16,61 @@ import importlib.util
 import sys
 from datetime import datetime, date
 from pydantic import BaseModel, EmailStr
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+import os
+from fastapi import Depends
+from investment_service.core.auth import oauth2_scheme
+
+# Set test mode before importing modules
+os.environ["TEST_MODE"] = "true"
 
 # Add the project root to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scripts.generate_openapi import find_services
 
+# Import dependencies from investment service
+from investment_service.models.investment import Base, MutualFund, Investment, FundCategory, InvestmentStatus
+from investment_service.core.database import get_db, engine as test_engine
+from investment_service.core.auth import get_current_user_id
 
 def load_service_module(main_py_path: Path) -> Any:
     """Load a service module from its main.py file."""
-    spec = importlib.util.spec_from_file_location("service_module", main_py_path)
-    if not spec or not spec.loader:
+    print(f"Loading module from {main_py_path}")
+    
+    # Add the service's src directory to Python path
+    src_dir = main_py_path.parent
+    while src_dir.name != "src" and src_dir.parent != src_dir:
+        src_dir = src_dir.parent
+    if src_dir.name == "src":
+        print(f"Adding {src_dir} to Python path")
+        sys.path.insert(0, str(src_dir))
+    else:
+        print(f"Could not find src directory for {main_py_path}")
         return None
     
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["service_module"] = module
+    # Determine the module name from the path
+    relative_path = main_py_path.relative_to(src_dir)
+    module_parts = list(relative_path.parts)
+    if module_parts[-1] == "__init__.py":
+        module_parts.pop()
+    elif module_parts[-1] == "main.py":
+        module_parts[-1] = "main"
+    module_name = ".".join(module_parts)
+    
+    print(f"Loading module {module_name}")
     try:
-        spec.loader.exec_module(module)
+        # Try to import the module using importlib
+        module = importlib.import_module(module_name)
         return module
     except Exception as e:
-        print(f"Error loading module: {e}")
+        print(f"Error loading module {module_name}: {e}")
         return None
+    finally:
+        # Remove the service's src directory from Python path
+        if str(src_dir) in sys.path:
+            sys.path.remove(str(src_dir))
 
 
 def generate_example_value(schema: Dict[str, Any]) -> Any:
@@ -74,21 +108,45 @@ def generate_example_value(schema: Dict[str, Any]) -> Any:
     return None
 
 
-def generate_request_body(operation_spec: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Generate a request body based on OpenAPI operation specification."""
-    if "requestBody" not in operation_spec:
+def generate_request_body(operation: dict) -> Optional[dict]:
+    """Generate a request body based on the OpenAPI operation spec."""
+    if "requestBody" not in operation:
         return None
+
+    content = operation["requestBody"]["content"]
     
-    content = operation_spec["requestBody"].get("content", {})
-    if "application/json" not in content:
-        return None
-    
-    schema = content["application/json"].get("schema", {})
-    if "$ref" in schema:
-        # TODO: Handle schema references
+    # Handle application/x-www-form-urlencoded
+    if "application/x-www-form-urlencoded" in content:
+        schema = content["application/x-www-form-urlencoded"]["schema"]
+        if "$ref" in schema:
+            ref = schema["$ref"].split("/")[-1]
+            if ref == "Body_login_token_post":
+                return {
+                    "username": "test@example.com",
+                    "password": "password123",
+                    "grant_type": "password"
+                }
         return {}
-    
-    return generate_example_value(schema)
+
+    # Handle application/json
+    if "application/json" in content:
+        schema = content["application/json"]["schema"]
+        if "$ref" in schema:
+            ref = schema["$ref"].split("/")[-1]
+            if ref == "InvestmentCreate":
+                return {
+                    "fund_id": 1,
+                    "purchase_amount": 1000.0
+                }
+            elif ref == "UserCreate":
+                return {
+                    "email": "test@example.com",
+                    "full_name": "Test User",
+                    "password": "password123"
+                }
+        return {}
+
+    return {}
 
 
 def resolve_schema_ref(spec: Dict[str, Any], ref: str) -> Dict[str, Any]:
@@ -230,55 +288,95 @@ def test_openapi_spec_validity():
             pytest.fail(f"Invalid OpenAPI spec for {service['name']}: {e}")
 
 
-def setup_test_data(module: Any) -> None:
-    """Set up test data for a service module."""
-    # Mock database session if needed
-    if hasattr(module, "get_db"):
-        def get_test_db():
-            # Return a mock or test database session
-            return None
-        module.get_db = get_test_db
+def mock_get_db():
+    """Mock database session for testing."""
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
     
-    # Mock authentication if needed
-    if hasattr(module, "get_current_user"):
-        async def get_test_user():
-            return {
-                "id": 1,
-                "email": "test@example.com",
-                "full_name": "Test User",
-                "role": "USER",
-                "is_active": True
-            }
-        module.get_current_user = get_test_user
-    
-    # Mock external services if needed
-    if hasattr(module, "get_external_service"):
-        def get_test_external_service():
-            return None
-        module.get_external_service = get_test_external_service
+    try:
+        db = TestingSessionLocal()
+        yield db
+    finally:
+        db.close()
 
 
-@pytest.fixture
+def mock_get_current_user_id(token: str = Depends(oauth2_scheme)) -> int:
+    """Mock function to return a test user ID."""
+    return 1
+
+
+def setup_test_data(module):
+    """Set up test data and mocks for a service module."""
+    # Create database tables
+    if hasattr(module, "Base"):
+        Base.metadata.create_all(bind=test_engine)
+
+        # Create test session
+        TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+        db = TestingSessionLocal()
+
+        # Add sample data if this is the investment service
+        if hasattr(module, "MutualFund"):
+            # Add a sample mutual fund
+            fund = MutualFund(
+                scheme_code="TEST001",
+                scheme_name="Test Fund",
+                category=FundCategory.EQUITY,
+                nav=100.0,
+                aum=1000000.0,
+                risk_level="HIGH",
+                expense_ratio=1.5
+            )
+            db.add(fund)
+            db.commit()
+            db.refresh(fund)
+
+            # Add a sample investment
+            investment = Investment(
+                user_id="test_user_id",
+                fund_id=fund.id,
+                units=10.0,
+                purchase_nav=100.0,
+                current_nav=110.0,
+                purchase_amount=1000.0,
+                current_value=1100.0,
+                status=InvestmentStatus.COMPLETED
+            )
+            db.add(investment)
+            db.commit()
+
+        db.close()
+
+    # Override dependencies
+    if hasattr(module, "app"):
+        module.app.dependency_overrides[get_db] = mock_get_db
+        module.app.dependency_overrides[get_current_user_id] = mock_get_current_user_id
+
+
+@pytest.fixture(autouse=True)
 def mock_dependencies(monkeypatch):
-    """Fixture to mock common dependencies."""
-    # Mock database
-    def mock_db_session():
-        return None
-    monkeypatch.setattr("sqlalchemy.orm.Session", mock_db_session)
-    
-    # Mock JWT verification
-    def mock_verify_token():
-        return {"sub": "test@example.com"}
-    monkeypatch.setattr("jose.jwt.decode", mock_verify_token)
-    
-    # Mock external API calls
+    """Mock external dependencies."""
     def mock_external_request(*args, **kwargs):
+        """Mock external HTTP requests."""
         class MockResponse:
-            def json(self):
-                return {"status": "success"}
+            def __init__(self):
+                self.status_code = 200
+                self.content = b"{}"
+                self.text = "{}"
+            async def json(self):
+                return {}
+            def raise_for_status(self):
+                pass
         return MockResponse()
+    
     monkeypatch.setattr("httpx.AsyncClient.get", mock_external_request)
     monkeypatch.setattr("httpx.AsyncClient.post", mock_external_request)
+    
+    # Mock environment variables
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
+    monkeypatch.setenv("TEST_MODE", "true")
+    monkeypatch.setenv("SECRET_KEY", "test_secret_key")
+    monkeypatch.setenv("ALGORITHM", "HS256")
+    monkeypatch.setenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
 
 
 @pytest.mark.integration
@@ -331,7 +429,11 @@ def test_api_implementation_matches_spec(mock_dependencies):
                         headers=headers,
                         json=body
                     )
-                    
+
+                    # Print response details for debugging
+                    print(f"\nResponse status: {response.status_code}")
+                    print(f"Response body: {response.text}")
+
                     # Get expected response schema
                     status_code = str(response.status_code)
                     if status_code not in operation.get("responses", {}):

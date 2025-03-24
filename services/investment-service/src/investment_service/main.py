@@ -65,11 +65,12 @@ async def root():
     
     Returns service name, version, and status.
     """
-    return MessageResponse(
-        service=settings.PROJECT_NAME,
-        version=settings.VERSION,
-        status="healthy"
-    )
+    return {
+        "message": "Investment Service API",
+        "service": settings.PROJECT_NAME,
+        "version": settings.VERSION,
+        "status": "healthy"
+    }
 
 @app.get("/portfolio/summary", response_model=PortfolioSummary, tags=["portfolio"])
 async def get_portfolio_summary(
@@ -122,7 +123,7 @@ async def get_portfolio_summary(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail="An error occurred while fetching portfolio summary"
+            detail=f"An error occurred while fetching portfolio summary: {str(e)}"
         )
 
 # Add sample data function
@@ -177,7 +178,12 @@ async def initialize_data(db: Session = Depends(get_db)):
     if they don't already exist.
     """
     add_sample_funds(db)
-    return MessageResponse(message="Sample data initialized")
+    return MessageResponse(
+        message="Sample data initialized",
+        service=settings.PROJECT_NAME,
+        version=settings.VERSION,
+        status="success"
+    )
 
 @app.post("/investments/", response_model=InvestmentResponse, tags=["investments"])
 async def create_investment(
@@ -264,7 +270,7 @@ async def get_portfolio_analytics(
         investments=investments_list.investments
     )
 
-@app.post("/investments/update-navs", tags=["investments"])
+@app.post("/investments/update-navs", response_model=MessageResponse, tags=["investments"])
 async def update_investment_navs(
         db: Session = Depends(get_db),
         user_id: str = Depends(get_current_user_id)
@@ -283,14 +289,24 @@ async def update_investment_navs(
         investment.update_current_value()
 
     db.commit()
-    return {"message": "Investment values updated successfully"}
+    return MessageResponse(
+        message="Investment values updated successfully",
+        service=settings.PROJECT_NAME,
+        version=settings.VERSION,
+        status="success"
+    )
 
 # Health check endpoint
-@app.get("/health", tags=["system"])
+@app.get("/health", response_model=MessageResponse, tags=["system"])
 async def health_check():
     """
     Check if the service is healthy.
     
     Returns a simple status message indicating the service is operational.
     """
-    return {"status": "healthy", "service": "investment-service"}
+    return MessageResponse(
+        message="Service is operational",
+        service=settings.PROJECT_NAME,
+        version=settings.VERSION,
+        status="healthy"
+    )
