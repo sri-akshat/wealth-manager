@@ -91,3 +91,12 @@ class InvestmentFilter(BaseModel):
         if v and values.get("start_date") and v < values["start_date"]:
             raise ValueError("end_date must be after start_date")
         return v
+
+class MessageResponse(BaseModel):
+    """
+    A simple message response schema.
+    """
+    message: Optional[str] = None
+    service: Optional[str] = None
+    version: Optional[str] = None
+    status: Optional[str] = None

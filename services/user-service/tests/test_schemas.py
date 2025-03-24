@@ -1,7 +1,14 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, UTC
 from pydantic import ValidationError
-from user_service.schemas.user import UserBase, UserCreate, User, Token
+from user_service.schemas.user import (
+    UserBase, 
+    UserCreate, 
+    User, 
+    TokenResponse,
+    ErrorResponse,
+    RegisterResponse
+)
 from user_service.models.user import Role
 
 def test_user_base_valid():
@@ -52,7 +59,7 @@ def test_user_create_missing_password():
 
 def test_user_response_valid():
     """Test creating a valid User instance."""
-    current_time = datetime.utcnow()
+    current_time = datetime.now(UTC)
     user_data = {
         "id": 1,
         "email": "test@example.com",
@@ -71,7 +78,7 @@ def test_user_response_valid():
 
 def test_user_response_optional_last_login():
     """Test User with optional last_login."""
-    current_time = datetime.utcnow()
+    current_time = datetime.now(UTC)
     user_data = {
         "id": 1,
         "email": "test@example.com",
@@ -88,13 +95,78 @@ def test_user_response_optional_last_login():
     assert user.is_active is True
     assert user.created_at == current_time
 
-def test_token_valid():
-    """Test creating a valid Token instance."""
-    token = Token(access_token="some.jwt.token", token_type="bearer")
+def test_token_response_valid():
+    """Test creating a valid TokenResponse instance."""
+    current_time = datetime.now(UTC)
+    user_data = {
+        "id": 1,
+        "email": "test@example.com",
+        "full_name": "Test User",
+        "role": Role.CUSTOMER,
+        "is_active": True,
+        "created_at": current_time
+    }
+    token_data = {
+        "access_token": "some.jwt.token",
+        "token_type": "bearer",
+        "expires_in": 3600,
+        "scope": "read:profile write:profile",
+        "user": user_data
+    }
+    token = TokenResponse(**token_data)
     assert token.access_token == "some.jwt.token"
     assert token.token_type == "bearer"
+    assert token.expires_in == 3600
+    assert token.scope == "read:profile write:profile"
+    assert token.user.email == "test@example.com"
 
-def test_token_default_type():
-    """Test Token with default token type."""
-    token = Token(access_token="some.jwt.token", token_type="bearer")
-    assert token.token_type == "bearer" 
+def test_token_response_default_values():
+    """Test TokenResponse with default values."""
+    current_time = datetime.now(UTC)
+    user_data = {
+        "id": 1,
+        "email": "test@example.com",
+        "full_name": "Test User",
+        "role": Role.CUSTOMER,
+        "is_active": True,
+        "created_at": current_time
+    }
+    token_data = {
+        "access_token": "some.jwt.token",
+        "user": user_data
+    }
+    token = TokenResponse(**token_data)
+    assert token.token_type == "bearer"  # Default value
+    assert token.expires_in == 3600  # Default value
+    assert token.scope == ""  # Default value
+
+def test_error_response_valid():
+    """Test creating a valid ErrorResponse instance."""
+    error_data = {
+        "detail": "Invalid credentials",
+        "status_code": 401,
+        "error_type": "authentication_error"
+    }
+    error = ErrorResponse(**error_data)
+    assert error.detail == "Invalid credentials"
+    assert error.status_code == 401
+    assert error.error_type == "authentication_error"
+
+def test_register_response_valid():
+    """Test creating a valid RegisterResponse instance."""
+    current_time = datetime.now(UTC)
+    user_data = {
+        "id": 1,
+        "email": "test@example.com",
+        "full_name": "Test User",
+        "role": Role.CUSTOMER,
+        "is_active": True,
+        "created_at": current_time
+    }
+    register_data = {
+        "access_token": "some.jwt.token",
+        "user": user_data
+    }
+    response = RegisterResponse(**register_data)
+    assert response.access_token == "some.jwt.token"
+    assert response.user.email == "test@example.com" 

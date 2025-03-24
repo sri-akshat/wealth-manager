@@ -49,8 +49,9 @@ def client(db):
             db.close()
     
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as test_client:
-        yield test_client
+    test_client = TestClient(app, base_url="http://test")
+    test_client.headers = {}  # Reset headers for each test
+    yield test_client
     app.dependency_overrides.clear()
 
 @pytest.fixture(scope="function")

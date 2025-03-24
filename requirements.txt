@@ -1,12 +1,23 @@
+# Core dependencies
 fastapi==0.109.0
 uvicorn==0.27.0
-sqlalchemy>=2.0.0
+SQLAlchemy==2.0.25
 pydantic>=2.0.0
+pydantic-settings>=2.1.0
+
+# Authentication and validation
 python-jose==3.3.0
 passlib>=1.7.4
 python-multipart==0.0.6
+email-validator>=2.1.0
+
+# HTTP and API tools
 requests>=2.31.0
+httpx==0.24.1  # Specific version for FastAPI compatibility
+
+# Testing
 pytest==7.4.3
 pytest-cov==4.1.0
-SQLAlchemy==2.0.25
+
+# Data formats
 PyYAML==6.0.1

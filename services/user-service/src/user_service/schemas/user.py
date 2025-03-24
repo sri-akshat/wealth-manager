@@ -52,7 +52,15 @@ class ErrorResponse(BaseModel):
     status_code: int = Field(..., description="HTTP status code")
     error_type: str = Field(..., description="Type of error")
 
-class Token(BaseModel):
-    """Schema for JWT token response."""
+class TokenResponse(BaseModel):
+    """
+    OAuth2 compatible token response.
+    """
     access_token: str = Field(..., description="JWT access token")
-    token_type: str = Field(default="bearer", description="Token type")
+    token_type: str = Field("bearer", description="Token type")
+    expires_in: int = Field(3600, description="Token expiration in seconds")
+    scope: str = Field("", description="Space-separated list of granted scopes")
+    user: UserBase = Field(..., description="User profile information")
+
+    class Config:
+        from_attributes = True

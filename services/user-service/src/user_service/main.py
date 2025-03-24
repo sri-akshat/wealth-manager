@@ -1,17 +1,21 @@
-from fastapi import FastAPI, HTTPException, Depends, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import FastAPI, HTTPException, Depends, status, Security
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, SecurityScopes
+from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
+from fastapi.openapi.utils import get_openapi
 from sqlalchemy.orm import Session
 from .core.security import verify_password, get_password_hash, create_access_token, SECRET_KEY, ALGORITHM
 from .core.database import get_db, Base, engine
 from .models.user import User, Role
 from .schemas.user import (
+    UserBase,
     UserCreate,
     User as UserSchema,
     LoginRequest,
     LoginResponse,
     RegisterResponse,
     UserList,
-    ErrorResponse
+    ErrorResponse,
+    TokenResponse
 )
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
@@ -19,6 +23,40 @@ from typing import List, Optional
 
 # Create tables
 Base.metadata.create_all(bind=engine)
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title="User Service",
+        version="1.0.0",
+        description="User management service for wealth manager platform. Handles user registration, authentication, and profile management.",
+        routes=app.routes,
+    )
+
+    # Add OAuth2 password flow security scheme
+    openapi_schema["components"]["securitySchemes"] = {
+        "OAuth2PasswordBearer": {
+            "type": "oauth2",
+            "flows": {
+                "password": {
+                    "tokenUrl": "token",
+                    "scopes": {
+                        "read:profile": "Read user profile",
+                        "write:profile": "Update user profile",
+                        "admin": "Admin access"
+                    }
+                }
+            }
+        }
+    }
+
+    # Apply security globally
+    openapi_schema["security"] = [{"OAuth2PasswordBearer": []}]
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
 
 app = FastAPI(
     title="User Service",
@@ -47,7 +85,18 @@ app = FastAPI(
     ]
 )
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+# Configure OAuth2 password flow
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="token",
+    scopes={
+        "read:profile": "Read user profile",
+        "write:profile": "Update user profile",
+        "admin": "Admin access"
+    }
+)
+
+# Override the default OpenAPI schema
+app.openapi = custom_openapi
 
 @app.get("/", tags=["system"])
 async def root():
@@ -112,20 +161,31 @@ async def register_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @app.post(
     "/token",
-    response_model=LoginResponse,
+    response_model=TokenResponse,
     tags=["auth"],
     responses={
         401: {"model": ErrorResponse, "description": "Invalid credentials"},
-    }
+    },
+    summary="Create access token",
+    description="""
+    OAuth2 compatible token login, get an access token for future requests.
+    
+    Form Parameters:
+    - **username**: Email address
+    - **password**: Account password
+    - **scope**: Space-separated list of requested scopes (optional)
+    - **grant_type**: OAuth2 grant type, defaults to "password" (optional)
+    """
 )
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
     """
-    Authenticate a user and return an access token.
+    Create access token for user authentication.
     
-    Validates the user's credentials and returns a JWT token along with the user's profile.
+    This endpoint implements OAuth2 password flow and expects form data with
+    username (email) and password fields.
     """
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -135,14 +195,33 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Include requested scopes in the token if they're allowed
+    scopes = []
+    if form_data.scopes:
+        allowed_scopes = oauth2_scheme.scopes
+        scopes = [scope for scope in form_data.scopes if scope in allowed_scopes]
+
     access_token = create_access_token(
-        data={"sub": user.email, "role": user.role.value}
+        data={
+            "sub": user.email,
+            "role": user.role.value,
+            "scopes": scopes
+        }
     )
 
-    return LoginResponse(
+    # Convert SQLAlchemy model to UserBase Pydantic model
+    user_base = UserBase(
+        email=user.email,
+        full_name=user.full_name,
+        role=user.role
+    )
+
+    return TokenResponse(
         access_token=access_token,
         token_type="bearer",
-        user=user
+        expires_in=3600,  # 1 hour
+        scope=" ".join(scopes),
+        user=user_base
     )
 
 @app.get(

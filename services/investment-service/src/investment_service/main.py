@@ -14,7 +14,8 @@ from .schemas.investment import (
     PortfolioSummary,
     PortfolioInvestment,
     PortfolioAnalytics,
-    PortfolioInvestmentList
+    PortfolioInvestmentList,
+    MessageResponse
 )
 from datetime import datetime
 
@@ -57,18 +58,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/", tags=["system"])
+@app.get("/", response_model=MessageResponse, tags=["system"])
 async def root():
     """
     Root endpoint that provides basic service information.
     
     Returns service name, version, and status.
     """
-    return {
-        "service": settings.PROJECT_NAME,
-        "version": settings.VERSION,
-        "status": "healthy"
-    }
+    return MessageResponse(
+        service=settings.PROJECT_NAME,
+        version=settings.VERSION,
+        status="healthy"
+    )
 
 @app.get("/portfolio/summary", response_model=PortfolioSummary, tags=["portfolio"])
 async def get_portfolio_summary(
@@ -167,7 +168,7 @@ def add_sample_funds(db: Session):
     db.commit()
 
 # Add endpoint to initialize sample data
-@app.post("/initialize-sample-data", tags=["system"])
+@app.post("/initialize-sample-data", response_model=MessageResponse, tags=["system"])
 async def initialize_data(db: Session = Depends(get_db)):
     """
     Initialize sample mutual fund data for testing.
@@ -176,7 +177,7 @@ async def initialize_data(db: Session = Depends(get_db)):
     if they don't already exist.
     """
     add_sample_funds(db)
-    return {"message": "Sample data initialized"}
+    return MessageResponse(message="Sample data initialized")
 
 @app.post("/investments/", response_model=InvestmentResponse, tags=["investments"])
 async def create_investment(
@@ -208,7 +209,7 @@ async def create_investment(
     db.add(db_investment)
     db.commit()
     db.refresh(db_investment)
-    return db_investment
+    return InvestmentResponse.from_orm(db_investment)
 
 @app.get("/portfolio/investments", response_model=PortfolioInvestmentList, tags=["portfolio"])
 async def get_portfolio_investments(
@@ -244,21 +245,23 @@ async def get_portfolio_investments(
 
 @app.get("/portfolio/analytics", response_model=PortfolioAnalytics, tags=["portfolio"])
 async def get_portfolio_analytics(
-        db: Session = Depends(get_db),
-        user_id: str = Depends(get_current_user_id)
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
-    Get comprehensive portfolio analytics including summary and investments.
+    Get detailed portfolio analytics.
     
-    This endpoint combines portfolio summary and detailed investment information
-    in a single response for a complete portfolio overview.
+    Returns portfolio summary and detailed investment information.
     """
-    summary = await get_portfolio_summary(db, user_id)
-    investments_list = await get_portfolio_investments(db, user_id)
-
+    # Get portfolio summary
+    summary = await get_portfolio_summary(db=db, user_id=user_id)
+    
+    # Get investment details
+    investments_list = await get_portfolio_investments(db=db, user_id=user_id)
+    
     return PortfolioAnalytics(
         summary=summary,
-        investments=investments_list.investments  # Access the investments field
+        investments=investments_list.investments
     )
 
 @app.post("/investments/update-navs", tags=["investments"])
