@@ -1,6 +1,7 @@
 openapi: 3.1.0
 info:
-  title: Notification Service
+  title: KYC Service
+  description: KYC (Know Your Customer) service for wealth manager platform.
   version: 0.1.0
 paths:
   /health:
