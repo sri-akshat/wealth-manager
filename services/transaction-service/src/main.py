@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel
 
 class MessageResponse(BaseModel):
@@ -8,19 +7,6 @@ class MessageResponse(BaseModel):
     service: str
     version: str
     status: str
-
-def custom_openapi():
-    if app.openapi_schema:
-        return app.openapi_schema
-    
-    openapi_schema = get_openapi(
-        title="Transaction Service",
-        version="0.1.0",
-        description="Transaction management service for wealth manager platform.",
-        routes=app.routes,
-    )
-    app.openapi_schema = openapi_schema
-    return app.openapi_schema
 
 app = FastAPI(
     title="Transaction Service",
@@ -40,9 +26,6 @@ app = FastAPI(
         }
     ]
 )
-
-# Override the default OpenAPI schema
-app.openapi = custom_openapi
 
 # Configure CORS
 app.add_middleware(

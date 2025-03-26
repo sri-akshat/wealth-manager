@@ -11,7 +11,20 @@ class MessageResponse(BaseModel):
 app = FastAPI(
     title="Gateway Service",
     description="API Gateway service for wealth manager platform.",
-    version="1.0.0"
+    version="1.0.0",
+    contact={
+        "name": "Wealth Manager Team",
+        "url": "https://github.com/sri-akshat/wealth-manager",
+    },
+    license_info={
+        "name": "Private",
+    },
+    openapi_tags=[
+        {
+            "name": "system",
+            "description": "System maintenance operations",
+        }
+    ]
 )
 
 @app.get("/", response_model=MessageResponse)

@@ -3,12 +3,12 @@ info:
   title: Investment Service
   description: Investment service API for wealth manager platform. Manages mutual
     fund investments and portfolio analytics.
+  version: 1.0.0
   contact:
     name: Wealth Manager Team
     url: https://github.com/sri-akshat/wealth-manager
   license:
     name: Private
-  version: 1.0.0
 paths:
   /:
     get:

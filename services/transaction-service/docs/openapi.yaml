@@ -1,10 +1,18 @@
 openapi: 3.1.0
 info:
-  title: Notification Service
+  title: Transaction Service
+  description: Transaction management service for wealth manager platform.
   version: 0.1.0
+  contact:
+    name: Wealth Manager Team
+    url: https://github.com/sri-akshat/wealth-manager
+  license:
+    name: Private
 paths:
   /health:
     get:
+      tags:
+      - system
       summary: Health Check
       operationId: health_check_health_get
       responses:
@@ -16,6 +24,8 @@ paths:
                 $ref: '#/components/schemas/MessageResponse'
   /:
     get:
+      tags:
+      - system
       summary: Root
       operationId: root__get
       responses:
@@ -48,3 +58,6 @@ components:
       - version
       - status
       title: MessageResponse
+tags:
+- name: system
+  description: System maintenance operations

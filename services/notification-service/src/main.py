@@ -8,7 +8,24 @@ class MessageResponse(BaseModel):
     version: str
     status: str
 
-app = FastAPI(title="Notification Service", version="0.1.0")
+app = FastAPI(
+    title="Notification Service",
+    description="Notification service for wealth manager platform.",
+    version="0.1.0",
+    contact={
+        "name": "Wealth Manager Team",
+        "url": "https://github.com/sri-akshat/wealth-manager",
+    },
+    license_info={
+        "name": "Private",
+    },
+    openapi_tags=[
+        {
+            "name": "system",
+            "description": "System maintenance operations",
+        }
+    ]
+)
 
 # Configure CORS
 app.add_middleware(

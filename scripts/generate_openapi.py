@@ -233,6 +233,12 @@ def generate_service_spec(service_dir: str, service_name: str, has_package: bool
         for patch in patches:
             patch.start()
 
+        # Clear any existing module from sys.modules to prevent reuse
+        if module_name in sys.modules:
+            del sys.modules[module_name]
+        if "main" in sys.modules:
+            del sys.modules["main"]
+
         # Import the module
         module = importlib.import_module(module_name)
         
@@ -240,12 +246,21 @@ def generate_service_spec(service_dir: str, service_name: str, has_package: bool
         app = module.app
 
         # Get OpenAPI spec
-        if hasattr(app, "openapi") and callable(app.openapi):
-            # Use the app's custom OpenAPI function if available
-            openapi_spec = app.openapi()
-        else:
-            # Use FastAPI's default OpenAPI generation
-            openapi_spec = app.openapi()
+        openapi_spec = get_openapi(
+            title=app.title,
+            version=app.version,
+            description=app.description,
+            routes=app.routes,
+            tags=app.openapi_tags if hasattr(app, "openapi_tags") else None,
+            servers=app.servers if hasattr(app, "servers") else None,
+            terms_of_service=app.terms_of_service if hasattr(app, "terms_of_service") else None
+        )
+
+        # Add contact and license info if available
+        if hasattr(app, "contact"):
+            openapi_spec["info"]["contact"] = app.contact
+        if hasattr(app, "license_info"):
+            openapi_spec["info"]["license"] = app.license_info
 
         # Create docs directory if it doesn't exist
         docs_dir = os.path.join(service_dir, "docs")
@@ -270,6 +285,12 @@ def generate_service_spec(service_dir: str, service_name: str, has_package: bool
         # Remove service source from Python path
         if src_dir in sys.path:
             sys.path.remove(src_dir)
+
+        # Clean up imported modules
+        if module_name in sys.modules:
+            del sys.modules[module_name]
+        if "main" in sys.modules:
+            del sys.modules["main"]
 
 
 def main():
