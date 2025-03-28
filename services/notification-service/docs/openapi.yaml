@@ -2,12 +2,12 @@ openapi: 3.1.0
 info:
   title: Notification Service
   description: Notification service for wealth manager platform.
-  version: 0.1.0
   contact:
     name: Wealth Manager Team
     url: https://github.com/sri-akshat/wealth-manager
   license:
     name: Private
+  version: 0.1.0
 paths:
   /health:
     get:

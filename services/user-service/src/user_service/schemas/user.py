@@ -1,6 +1,6 @@
 # services/user-service/src/schemas/user.py
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
+from pydantic import BaseModel, EmailStr, Field, constr, ConfigDict
+from typing import Optional, List, Literal, Union
 from datetime import datetime
 from ..models.user import Role
 
@@ -20,8 +20,19 @@ class User(UserBase):
     is_active: bool = Field(..., description="Whether the user account is active")
     created_at: datetime = Field(..., description="When the user account was created")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "email": "test@example.com",
+                "full_name": "Test User",
+                "role": "customer",
+                "id": 1,
+                "is_active": True,
+                "created_at": "2025-03-26T23:36:59.449495"
+            }
+        }
+    )
 
 class LoginRequest(BaseModel):
     """Schema for login request."""
@@ -36,7 +47,7 @@ class LoginResponse(BaseModel):
 
 class RegisterResponse(BaseModel):
     """Schema for successful registration response."""
-    access_token: Optional[str] = Field(None, description="JWT access token if auto-login is enabled")
+    access_token: str = Field(None, description="JWT access token if auto-login is enabled", nullable=True)
     user: User = Field(..., description="Created user details")
 
 class UserList(BaseModel):
@@ -47,10 +58,18 @@ class UserList(BaseModel):
     limit: int = Field(..., description="Maximum number of users returned")
 
 class ErrorResponse(BaseModel):
-    """Schema for error responses."""
-    detail: str = Field(..., description="Error message")
-    status_code: int = Field(..., description="HTTP status code")
-    error_type: str = Field(..., description="Type of error")
+    """Schema for error response."""
+    error: str = Field(..., description="Error message")
+    detail: Optional[str] = Field(None, description="Additional error details", ge=None)
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "error": "Invalid authentication token",
+                "detail": None
+            }
+        }
+    )
 
 class TokenResponse(BaseModel):
     """
@@ -73,9 +92,56 @@ class MessageResponse(BaseModel):
     status: str = Field(..., description="Service status")
 
 class ValidationError(BaseModel):
-    loc: List[str]
-    msg: str
-    type: str
+    """Schema for validation error details."""
+    loc: List[str] = Field(
+        ...,
+        title="Location",
+        description="Location of the validation error",
+        examples=[["body", "username"]],
+        json_schema_extra={
+            "type": "array",
+            "items": {"type": "string"}
+        }
+    )
+    msg: str = Field(
+        ...,
+        title="Message",
+        description="Error message"
+    )
+    type: str = Field(
+        ...,
+        title="Error Type",
+        description="Error type"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "loc": ["body", "username"],
+                "msg": "field required",
+                "type": "value_error.missing"
+            }
+        }
+    }
 
 class HTTPValidationError(BaseModel):
-    detail: List[ValidationError]
+    """Schema for HTTP validation error response."""
+    detail: List[ValidationError] = Field(
+        ...,
+        title="Detail",
+        description="List of validation errors"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "detail": [
+                    {
+                        "loc": ["body", "username"],
+                        "msg": "field required",
+                        "type": "value_error.missing"
+                    }
+                ]
+            }
+        }
+    }

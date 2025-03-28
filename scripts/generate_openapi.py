@@ -16,35 +16,40 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import os
 import traceback
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 def mock_database():
-    """Mock SQLAlchemy database connection."""
-    # Mock SQLAlchemy engine and session
+    """Mock database connections and operations."""
+    # Create a mock engine
     mock_engine = MagicMock()
-    mock_session = MagicMock()
-    mock_session_maker = MagicMock(return_value=mock_session)
-
-    # Mock database operations
-    mock_engine.connect.return_value = MagicMock()
     mock_engine.raw_connection.return_value = MagicMock()
+    mock_engine.connect.return_value = MagicMock()
     mock_engine.begin.return_value = MagicMock()
-    mock_engine.execute.return_value = MagicMock()
-    mock_engine.scalar.return_value = MagicMock()
 
-    # Mock session operations
+    # Create a mock session
+    mock_session = MagicMock()
     mock_session.commit.return_value = None
-    mock_session.query.return_value = mock_session
-    mock_session.filter.return_value = mock_session
-    mock_session.first.return_value = None
-    mock_session.all.return_value = []
+    mock_session.close.return_value = None
+    mock_session.query.return_value = MagicMock()
+    mock_session.add.return_value = None
+    mock_session.delete.return_value = None
+    mock_session.refresh.return_value = None
+
+    # Create a mock session maker
+    mock_session_maker = MagicMock()
+    mock_session_maker.return_value = mock_session
 
     # Create patches
     patches = [
-        unittest.mock.patch("sqlalchemy.create_engine", return_value=mock_engine),
-        unittest.mock.patch("sqlalchemy.orm.sessionmaker", return_value=mock_session_maker),
-        unittest.mock.patch("sqlalchemy.orm.Session", mock_session.__class__),
+        patch("sqlalchemy.create_engine", return_value=mock_engine),
+        patch("sqlalchemy.orm.sessionmaker", return_value=mock_session_maker),
+        patch("sqlalchemy.orm.Session", mock_session),
+        patch("sqlalchemy.engine.Engine", mock_engine),
     ]
+
+    # Start all patches
+    for p in patches:
+        p.start()
 
     return patches
 
@@ -57,7 +62,7 @@ def find_services() -> List[Dict[str, Any]]:
     for service_dir in services_dir.iterdir():
         if not service_dir.is_dir() or service_dir.name == "shared":
             continue
-
+        
         # Check if service uses package structure or flat structure
         src_dir = service_dir / "src"
         if not src_dir.exists():
@@ -75,7 +80,7 @@ def find_services() -> List[Dict[str, Any]]:
             if path.exists():
                 main_py = path
                 break
-
+        
         if main_py:
             service = {
                 "name": service_dir.name,
@@ -150,7 +155,7 @@ def patch_fastapi_dependencies():
     # Create a dummy dependency
     def dummy_dependency_fn():
         return None
-    
+
     dummy_dependency = Depends(dummy_dependency_fn)
 
     def patched_get_dependant(*args, **kwargs):
@@ -208,68 +213,62 @@ def patch_fastapi_dependencies():
     ]
 
 
-def generate_service_spec(service_dir: str, service_name: str, has_package: bool) -> None:
-    """Generate OpenAPI spec for a service."""
+def generate_service_spec(service_name: str, service_dir: str) -> None:
+    """Generate OpenAPI specification for a service."""
     print(f"\nProcessing {service_name}...")
-    
+
     # Add service source to Python path
     src_dir = os.path.join(service_dir, "src")
-    sys.path.insert(0, src_dir)  # Insert at beginning to ensure our module is found first
+    sys.path.insert(0, src_dir)  # Insert at beginning to ensure it takes precedence
     print(f"Added {src_dir} to Python path")
 
-    # Import the main module
-    if has_package:
-        module_name = service_name.replace("-", "_") + ".main"
+    # Import main module
+    if service_name == "user-service":
+        module_name = "user_service.main"
+    elif service_name == "investment-service":
+        module_name = "investment_service.main"
+    elif os.path.exists(os.path.join(src_dir, service_name.replace("-", "_"), "main.py")):
+        module_name = f"{service_name.replace('-', '_')}.main"
     else:
         module_name = "main"
+
     print(f"Importing {module_name}...")
 
     try:
         # Set up patches
-        patches = []
-        patches.extend(mock_database())
-        patches.extend(patch_fastapi_dependencies())
-        
-        for patch in patches:
-            patch.start()
+        patches = mock_database()
 
-        # Clear any existing module from sys.modules to prevent reuse
+        # Clean up any existing module imports
         if module_name in sys.modules:
             del sys.modules[module_name]
         if "main" in sys.modules:
             del sys.modules["main"]
 
-        # Import the module
+        # Import module and get FastAPI app instance
         module = importlib.import_module(module_name)
-        
-        # Get the FastAPI app instance
         app = module.app
 
-        # Get OpenAPI spec
-        openapi_spec = get_openapi(
-            title=app.title,
-            version=app.version,
-            description=app.description,
-            routes=app.routes,
-            tags=app.openapi_tags if hasattr(app, "openapi_tags") else None,
-            servers=app.servers if hasattr(app, "servers") else None,
-            terms_of_service=app.terms_of_service if hasattr(app, "terms_of_service") else None
-        )
+        # Generate OpenAPI spec
+        openapi_schema = app.openapi()
 
-        # Add contact and license info if available
-        if hasattr(app, "contact"):
-            openapi_spec["info"]["contact"] = app.contact
-        if hasattr(app, "license_info"):
-            openapi_spec["info"]["license"] = app.license_info
+        # Update ValidationError schema if it exists
+        if "ValidationError" in openapi_schema["components"]["schemas"]:
+            validation_error = openapi_schema["components"]["schemas"]["ValidationError"]
+            validation_error["properties"]["loc"]["items"] = {"type": "string"}
+            validation_error["example"] = {
+                "loc": ["body", "username"],
+                "msg": "field required",
+                "type": "value_error.missing"
+            }
 
         # Create docs directory if it doesn't exist
         docs_dir = os.path.join(service_dir, "docs")
         os.makedirs(docs_dir, exist_ok=True)
 
-        # Save OpenAPI spec
-        spec_path = os.path.join(docs_dir, "openapi.yaml")
-        with open(spec_path, "w") as f:
-            yaml.dump(openapi_spec, f, sort_keys=False)
+        # Save OpenAPI spec to file
+        openapi_path = os.path.join(docs_dir, "openapi.yaml")
+        with open(openapi_path, "w") as f:
+            yaml.dump(openapi_schema, f, sort_keys=False)
 
         print(f"Successfully generated OpenAPI spec for {service_name}")
 
@@ -278,19 +277,10 @@ def generate_service_spec(service_dir: str, service_name: str, has_package: bool
         traceback.print_exc()
 
     finally:
-        # Stop patches
+        # Stop patches and remove service source from Python path
         for patch in patches:
             patch.stop()
-
-        # Remove service source from Python path
-        if src_dir in sys.path:
-            sys.path.remove(src_dir)
-
-        # Clean up imported modules
-        if module_name in sys.modules:
-            del sys.modules[module_name]
-        if "main" in sys.modules:
-            del sys.modules["main"]
+        sys.path.remove(src_dir)
 
 
 def main():
@@ -299,7 +289,7 @@ def main():
     
     # Generate OpenAPI specs for each service
     for service in services:
-        generate_service_spec(service["service_dir"], service["name"], service["has_package"])
+        generate_service_spec(service["name"], service["service_dir"])
 
 
 if __name__ == "__main__":

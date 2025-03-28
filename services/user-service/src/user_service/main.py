@@ -43,11 +43,103 @@ def custom_openapi():
         routes=app.routes,
     )
 
-    # Ensure ValidationError schema has correct type for loc
-    if "ValidationError" in openapi_schema["components"]["schemas"]:
-        openapi_schema["components"]["schemas"]["ValidationError"]["properties"]["loc"]["items"] = {
-            "type": "string"
+    # Define ErrorResponse schema explicitly
+    openapi_schema["components"]["schemas"]["ErrorResponse"] = {
+        "title": "ErrorResponse",
+        "type": "object",
+        "properties": {
+            "error": {
+                "type": "string",
+                "title": "Error",
+                "description": "Error message"
+            },
+            "detail": {
+                "type": "string",
+                "nullable": True,
+                "title": "Detail",
+                "description": "Additional error details"
+            }
+        },
+        "required": ["error"],
+        "description": "Schema for error response",
+        "example": {
+            "error": "Invalid authentication token",
+            "detail": None
         }
+    }
+
+    # Define ValidationError schema explicitly
+    openapi_schema["components"]["schemas"]["ValidationError"] = {
+        "title": "ValidationError",
+        "type": "object",
+        "properties": {
+            "loc": {
+                "title": "Location",
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "description": "Location of the validation error",
+                "examples": [["body", "username"]]
+            },
+            "msg": {
+                "title": "Message",
+                "type": "string",
+                "description": "Error message"
+            },
+            "type": {
+                "title": "Error Type",
+                "type": "string",
+                "description": "Error type"
+            }
+        },
+        "required": ["loc", "msg", "type"],
+        "description": "Schema for validation error details",
+        "example": {
+            "loc": ["body", "username"],
+            "msg": "field required",
+            "type": "value_error.missing"
+        }
+    }
+
+    # Define HTTPValidationError schema explicitly
+    openapi_schema["components"]["schemas"]["HTTPValidationError"] = {
+        "title": "HTTPValidationError",
+        "type": "object",
+        "properties": {
+            "detail": {
+                "title": "Detail",
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/ValidationError"
+                },
+                "description": "List of validation errors"
+            }
+        },
+        "required": ["detail"],
+        "description": "Schema for HTTP validation error response",
+        "example": {
+            "detail": [
+                {
+                    "loc": ["body", "username"],
+                    "msg": "field required",
+                    "type": "value_error.missing"
+                }
+            ]
+        }
+    }
+
+    # Update all error responses to use the correct schema
+    for path in openapi_schema["paths"].values():
+        for operation in path.values():
+            if "responses" in operation:
+                for response in operation["responses"].values():
+                    if "content" in response and "application/json" in response["content"]:
+                        schema = response["content"]["application/json"]["schema"]
+                        if schema.get("$ref") == "#/components/schemas/HTTPValidationError":
+                            response["content"]["application/json"]["schema"] = {
+                                "$ref": "#/components/schemas/HTTPValidationError"
+                            }
 
     # Ensure RegisterResponse schema has correct type for access_token
     if "RegisterResponse" in openapi_schema["components"]["schemas"]:
@@ -295,7 +387,8 @@ async def get_current_user(
             status_code=404,
             detail="User not found"
         )
-    return user
+    print(f"Current user: {user}")
+    return UserSchema.model_validate(user)
 
 @app.get(
     "/users",

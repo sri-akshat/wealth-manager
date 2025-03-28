@@ -3,12 +3,12 @@ info:
   title: Investment Service
   description: Investment service API for wealth manager platform. Manages mutual
     fund investments and portfolio analytics.
-  version: 1.0.0
   contact:
     name: Wealth Manager Team
     url: https://github.com/sri-akshat/wealth-manager
   license:
     name: Private
+  version: 1.0.0
 paths:
   /:
     get:
@@ -395,9 +395,7 @@ components:
       properties:
         loc:
           items:
-            anyOf:
-            - type: string
-            - type: integer
+            type: string
           type: array
           title: Location
         msg:
@@ -412,6 +410,12 @@ components:
       - msg
       - type
       title: ValidationError
+      example:
+        loc:
+        - body
+        - username
+        msg: field required
+        type: value_error.missing
   securitySchemes:
     OAuth2PasswordBearer:
       type: oauth2

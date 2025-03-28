@@ -143,14 +143,21 @@ def test_token_response_default_values():
 def test_error_response_valid():
     """Test creating a valid ErrorResponse instance."""
     error_data = {
-        "detail": "Invalid credentials",
-        "status_code": 401,
-        "error_type": "authentication_error"
+        "error": "Invalid credentials",
+        "detail": "Authentication failed"
     }
     error = ErrorResponse(**error_data)
-    assert error.detail == "Invalid credentials"
-    assert error.status_code == 401
-    assert error.error_type == "authentication_error"
+    assert error.error == "Invalid credentials"
+    assert error.detail == "Authentication failed"
+
+def test_error_response_with_null_detail():
+    """Test creating an ErrorResponse instance with null detail."""
+    error_data = {
+        "error": "Invalid authentication token"
+    }
+    error = ErrorResponse(**error_data)
+    assert error.error == "Invalid authentication token"
+    assert error.detail is None
 
 def test_register_response_valid():
     """Test creating a valid RegisterResponse instance."""

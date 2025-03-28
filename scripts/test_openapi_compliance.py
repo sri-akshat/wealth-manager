@@ -168,6 +168,12 @@ def validate_value_against_schema(value: Any, schema: Dict[str, Any], spec: Dict
     """Validate a value against an OpenAPI schema."""
     errors = []
     
+    # Handle null values
+    if value is None:
+        if schema.get("nullable", False):
+            return []
+        return [f"{path}: Value cannot be null"]
+    
     # Resolve schema reference if needed
     if "$ref" in schema:
         schema = resolve_schema_ref(spec, schema["$ref"])
@@ -175,7 +181,21 @@ def validate_value_against_schema(value: Any, schema: Dict[str, Any], spec: Dict
     # Get schema type
     schema_type = schema.get("type")
     if not schema_type:
-        return [f"{path}: Schema type not specified"]
+        # If no type is specified, check if it's an object with properties
+        if "properties" in schema:
+            schema_type = "object"
+        elif "$ref" in schema:
+            ref_schema = resolve_schema_ref(spec, schema["$ref"])
+            if "type" in ref_schema:
+                schema_type = ref_schema["type"]
+                schema.update(ref_schema)
+            elif "properties" in ref_schema:
+                schema_type = "object"
+                schema.update(ref_schema)
+            else:
+                return [f"{path}: Schema type not specified"]
+        else:
+            return [f"{path}: Schema type not specified"]
     
     # Check type
     if schema_type == "string":
@@ -195,54 +215,42 @@ def validate_value_against_schema(value: Any, schema: Dict[str, Any], spec: Dict
                 except ValueError:
                     errors.append(f"{path}: Invalid date format")
             elif schema_format == "email":
-                if "@" not in value:  # Simple email validation
+                if not "@" in value:
                     errors.append(f"{path}: Invalid email format")
-    
-    elif schema_type == "number":
-        if not isinstance(value, (int, float)):
-            errors.append(f"{path}: Expected number, got {type(value).__name__}")
-    
     elif schema_type == "integer":
         if not isinstance(value, int):
             errors.append(f"{path}: Expected integer, got {type(value).__name__}")
-    
+    elif schema_type == "number":
+        if not isinstance(value, (int, float)):
+            errors.append(f"{path}: Expected number, got {type(value).__name__}")
     elif schema_type == "boolean":
         if not isinstance(value, bool):
             errors.append(f"{path}: Expected boolean, got {type(value).__name__}")
-    
     elif schema_type == "array":
         if not isinstance(value, list):
             errors.append(f"{path}: Expected array, got {type(value).__name__}")
         else:
             items_schema = schema.get("items", {})
             for i, item in enumerate(value):
-                item_path = f"{path}[{i}]"
-                errors.extend(validate_value_against_schema(item, items_schema, spec, item_path))
-    
+                errors.extend(validate_value_against_schema(item, items_schema, spec, f"{path}[{i}]"))
     elif schema_type == "object":
         if not isinstance(value, dict):
             errors.append(f"{path}: Expected object, got {type(value).__name__}")
         else:
-            properties = schema.get("properties", {})
-            required = schema.get("required", [])
-            
             # Check required properties
+            required = schema.get("required", [])
             for prop in required:
                 if prop not in value:
                     errors.append(f"{path}: Missing required property '{prop}'")
             
             # Validate each property
+            properties = schema.get("properties", {})
             for prop_name, prop_value in value.items():
                 if prop_name in properties:
-                    prop_path = f"{path}.{prop_name}" if path else prop_name
-                    errors.extend(validate_value_against_schema(
-                        prop_value,
-                        properties[prop_name],
-                        spec,
-                        prop_path
-                    ))
-                elif not schema.get("additionalProperties", True):
-                    errors.append(f"{path}: Additional property '{prop_name}' not allowed")
+                    prop_schema = properties[prop_name]
+                    if "$ref" in prop_schema:
+                        prop_schema = resolve_schema_ref(spec, prop_schema["$ref"])
+                    errors.extend(validate_value_against_schema(prop_value, prop_schema, spec, f"{path}.{prop_name}"))
     
     return errors
 
@@ -260,6 +268,12 @@ def validate_response(response: Any, expected_schema: Dict[str, Any], spec: Dict
     schema = content["application/json"].get("schema", {})
     if not schema:
         return ["Response schema not specified"]
+    
+    # Resolve schema reference if needed
+    if "$ref" in schema:
+        schema = resolve_schema_ref(spec, schema["$ref"])
+        if "type" not in schema and "properties" in schema:
+            schema["type"] = "object"
     
     try:
         response_data = response.json()

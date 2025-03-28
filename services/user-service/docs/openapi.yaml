@@ -4,11 +4,6 @@ info:
   description: User management service for wealth manager platform. Handles user registration,
     authentication, and profile management.
   version: 1.0.0
-  contact:
-    name: Wealth Manager Team
-    url: https://github.com/sri-akshat/wealth-manager
-  license:
-    name: Private
 paths:
   /:
     get:
@@ -233,35 +228,44 @@ components:
       - password
       title: Body_login_token_post
     ErrorResponse:
-      properties:
-        detail:
-          type: string
-          title: Detail
-          description: Error message
-        status_code:
-          type: integer
-          title: Status Code
-          description: HTTP status code
-        error_type:
-          type: string
-          title: Error Type
-          description: Type of error
-      type: object
-      required:
-      - detail
-      - status_code
-      - error_type
       title: ErrorResponse
-      description: Schema for error responses.
+      type: object
+      properties:
+        error:
+          type: string
+          title: Error
+          description: Error message
+        detail:
+          type: string
+          nullable: true
+          title: Detail
+          description: Additional error details
+      required:
+      - error
+      description: Schema for error response
+      example:
+        error: Invalid authentication token
+        detail: null
     HTTPValidationError:
+      title: HTTPValidationError
+      type: object
       properties:
         detail:
+          title: Detail
+          type: array
           items:
             $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
+          description: List of validation errors
+      required:
+      - detail
+      description: Schema for HTTP validation error response
+      example:
+        detail:
+        - loc:
+          - body
+          - username
+          msg: field required
+          type: value_error.missing
     MessageResponse:
       properties:
         message:
@@ -291,11 +295,10 @@ components:
     RegisterResponse:
       properties:
         access_token:
-          anyOf:
-          - type: string
-          - type: 'null'
+          type: string
           title: Access Token
           description: JWT access token if auto-login is enabled
+          nullable: true
         user:
           $ref: '#/components/schemas/User'
           description: Created user details
@@ -378,6 +381,13 @@ components:
       - created_at
       title: User
       description: Schema for user response.
+      example:
+        created_at: '2025-03-26T23:36:59.449495'
+        email: test@example.com
+        full_name: Test User
+        id: 1
+        is_active: true
+        role: customer
     UserBase:
       properties:
         email:
@@ -455,40 +465,46 @@ components:
       title: UserList
       description: Schema for list of users response.
     ValidationError:
+      title: ValidationError
+      type: object
       properties:
         loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
           title: Location
+          type: array
+          items:
+            type: string
+          description: Location of the validation error
+          examples:
+          - - body
+            - username
         msg:
-          type: string
           title: Message
-        type:
           type: string
+          description: Error message
+        type:
           title: Error Type
-      type: object
+          type: string
+          description: Error type
       required:
       - loc
       - msg
       - type
-      title: ValidationError
+      description: Schema for validation error details
+      example:
+        loc:
+        - body
+        - username
+        msg: field required
+        type: value_error.missing
   securitySchemes:
     OAuth2PasswordBearer:
       type: oauth2
       flows:
         password:
+          tokenUrl: token
           scopes:
             read:profile: Read user profile
             write:profile: Update user profile
             admin: Admin access
-          tokenUrl: token
-tags:
-- name: users
-  description: Operations with users and profiles
-- name: auth
-  description: Authentication operations
-- name: system
-  description: System maintenance operations
+security:
+- OAuth2PasswordBearer: []
