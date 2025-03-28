@@ -1,19 +1,13 @@
 openapi: 3.1.0
 info:
-  title: Gateway Service
-  description: API Gateway service for wealth manager platform.
-  contact:
-    name: Wealth Manager Team
-    url: https://github.com/sri-akshat/wealth-manager
-  license:
-    name: Private
-  version: 1.0.0
+  title: KYC Service
+  description: KYC (Know Your Customer) service for wealth manager platform.
+  version: 0.1.0
 paths:
-  /:
+  /health:
     get:
-      summary: Root
-      description: Root endpoint that provides basic service information.
-      operationId: root__get
+      summary: Health Check
+      operationId: health_check_health_get
       responses:
         '200':
           description: Successful Response
@@ -21,11 +15,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
-  /health:
+  /:
     get:
-      summary: Health Check
-      description: Check if the service is healthy.
-      operationId: health_check_health_get
+      summary: Root
+      operationId: root__get
       responses:
         '200':
           description: Successful Response
@@ -56,6 +49,3 @@ components:
       - version
       - status
       title: MessageResponse
-tags:
-- name: system
-  description: System maintenance operations

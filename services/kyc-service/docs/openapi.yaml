@@ -2,11 +2,6 @@ openapi: 3.1.0
 info:
   title: KYC Service
   description: KYC (Know Your Customer) service for wealth manager platform.
-  contact:
-    name: Wealth Manager Team
-    url: https://github.com/sri-akshat/wealth-manager
-  license:
-    name: Private
   version: 0.1.0
 paths:
   /health:
@@ -54,6 +49,3 @@ components:
       - version
       - status
       title: MessageResponse
-tags:
-- name: system
-  description: System maintenance operations
