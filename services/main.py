@@ -126,8 +126,8 @@ app.add_middleware(
 )
 
 # Mount service applications
+app.mount("/", service_apps["user-service"])
 app.mount("/investments", service_apps["investment-service"])
-app.mount("/users", service_apps["user-service"])
 app.mount("/transactions", service_apps["transaction-service"])
 app.mount("/kyc", service_apps["kyc-service"])
 app.mount("/admin", service_apps["admin-service"])
