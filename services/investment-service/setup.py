@@ -12,7 +12,8 @@ setup(
         "fastapi>=0.68.0",
         "uvicorn>=0.15.0",
         "sqlalchemy>=1.4.23",
-        "pydantic>=2.0.0",
+        # Match Pydantic version used across services
+        "pydantic>=2.7,<3.0",
         "psycopg2-binary>=2.9.1",
         "python-jose[cryptography]>=3.3.0",
         "python-multipart>=0.0.5",

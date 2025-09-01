@@ -1,8 +1,9 @@
 fastapi==0.103.0
 uvicorn==0.23.2
 sqlalchemy==2.0.20
-pydantic==2.3.0
-pydantic[email]
+# Require modern Pydantic with email extras
+pydantic[email]>=2.7,<3.0
+pydantic-settings>=2.2.1
 python-jose==3.3.0
 passlib==1.7.4
 python-multipart==0.0.6
