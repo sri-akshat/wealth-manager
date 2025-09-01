@@ -3,11 +3,16 @@
 # Exit on error
 set -e
 
-# Set up Python path
+# Set up Python path to include repository root and service src directories
 export PYTHONPATH=$PYTHONPATH:$(pwd)
+for service_dir in services/*; do
+    if [ -d "$service_dir/src" ]; then
+        export PYTHONPATH=$PYTHONPATH:$(pwd)/$service_dir/src
+    fi
+done
 
-# Install test dependencies
-pip install -r requirements-test.txt
+# Install project and test dependencies
+pip install -r requirements.txt -r requirements-test.txt
 
 # Generate OpenAPI specifications
 echo "Generating OpenAPI specifications..."
