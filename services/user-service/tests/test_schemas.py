@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from pydantic import ValidationError
 from user_service.schemas.user import (
     UserBase, 
@@ -59,7 +59,7 @@ def test_user_create_missing_password():
 
 def test_user_response_valid():
     """Test creating a valid User instance."""
-    current_time = datetime.now(UTC)
+    current_time = datetime.now(timezone.utc)
     user_data = {
         "id": 1,
         "email": "test@example.com",
@@ -78,7 +78,7 @@ def test_user_response_valid():
 
 def test_user_response_optional_last_login():
     """Test User with optional last_login."""
-    current_time = datetime.now(UTC)
+    current_time = datetime.now(timezone.utc)
     user_data = {
         "id": 1,
         "email": "test@example.com",
@@ -97,7 +97,7 @@ def test_user_response_optional_last_login():
 
 def test_token_response_valid():
     """Test creating a valid TokenResponse instance."""
-    current_time = datetime.now(UTC)
+    current_time = datetime.now(timezone.utc)
     user_data = {
         "id": 1,
         "email": "test@example.com",
@@ -122,7 +122,7 @@ def test_token_response_valid():
 
 def test_token_response_default_values():
     """Test TokenResponse with default values."""
-    current_time = datetime.now(UTC)
+    current_time = datetime.now(timezone.utc)
     user_data = {
         "id": 1,
         "email": "test@example.com",
@@ -161,7 +161,7 @@ def test_error_response_with_null_detail():
 
 def test_register_response_valid():
     """Test creating a valid RegisterResponse instance."""
-    current_time = datetime.now(UTC)
+    current_time = datetime.now(timezone.utc)
     user_data = {
         "id": 1,
         "email": "test@example.com",

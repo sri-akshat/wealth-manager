@@ -1,9 +1,12 @@
 import importlib.util
 import sys
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import types
+from fastapi.responses import Response
+import yaml
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 
 # Get the services directory path
 services_dir = Path(__file__).parent
@@ -124,6 +127,41 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve per-service OpenAPI YAML without merging (must be defined before mounts)
+@app.get("/openapi/{service_name}")
+async def service_openapi_yaml(service_name: str):
+    allowed = {p.name for p in services_dir.iterdir() if p.is_dir() and p.name != "shared"}
+    if service_name not in allowed:
+        raise HTTPException(status_code=404, detail="Unknown service")
+
+    spec_path = services_dir / service_name / "docs" / "openapi.yaml"
+    if not spec_path.exists():
+        raise HTTPException(status_code=404, detail="OpenAPI spec not found for service")
+
+    try:
+        content = spec_path.read_text()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to read OpenAPI spec")
+
+    return Response(content=content, media_type="application/yaml")
+
+# Per-service Swagger UI and Redoc (before mounts)
+@app.get("/docs/{service_name}", include_in_schema=False)
+async def service_swagger_ui(service_name: str):
+    allowed = {p.name for p in services_dir.iterdir() if p.is_dir() and p.name != "shared"}
+    if service_name not in allowed:
+        raise HTTPException(status_code=404, detail="Unknown service")
+    openapi_url = f"/openapi/{service_name}"
+    return get_swagger_ui_html(openapi_url=openapi_url, title=f"{service_name} - Swagger UI")
+
+@app.get("/redoc/{service_name}", include_in_schema=False)
+async def service_redoc(service_name: str):
+    allowed = {p.name for p in services_dir.iterdir() if p.is_dir() and p.name != "shared"}
+    if service_name not in allowed:
+        raise HTTPException(status_code=404, detail="Unknown service")
+    openapi_url = f"/openapi/{service_name}"
+    return get_redoc_html(openapi_url=openapi_url, title=f"{service_name} - ReDoc")
 
 # Mount service applications
 app.mount("/", service_apps["user-service"])
