@@ -1,119 +1,323 @@
-openapi: 3.0.0
+openapi: 3.0.2
 info:
-  title: Wealth Manager API
-  description: Combined API documentation for all Wealth Manager services
+  title: Wealth Manager
+  description: Wealth Manager Platform - All Services
   version: 1.0.0
 paths:
-  /:
+  /health:
     get:
-      summary: Root endpoint that provides basic service information.
-      description: "Root endpoint that provides basic service information.\n    \n\
-        \    Returns service name, version, and status."
       tags:
       - system
+      summary: Health Check
+      description: Check if the service is healthy.
+      operationId: health_check_health_get
       responses:
         '200':
-          description: Successful response
-  /portfolio/summary:
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /investments/:
     get:
-      summary: Get summary of user's investment portfolio.
-      description: "Get summary of user's investment portfolio.\n    \n    Returns\
-        \ total investment, current value, returns, and asset allocation."
+      tags:
+      - system
+      summary: Root
+      description: 'Root endpoint that provides basic service information.
+
+
+        Returns service name, version, and status.'
+      operationId: root__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /investments/portfolio/summary:
+    get:
       tags:
       - portfolio
+      summary: Get Portfolio Summary
+      description: 'Get summary of user''s investment portfolio.
+
+
+        Returns total investment, current value, returns, and asset allocation.'
+      operationId: get_portfolio_summary_portfolio_summary_get
       responses:
         '200':
-          description: Successful response
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PortfolioSummary'
-  /initialize-sample-data:
+      security:
+      - OAuth2PasswordBearer: []
+  /investments/initialize-sample-data:
     post:
-      summary: Initialize sample mutual fund data for testing.
-      description: "Initialize sample mutual fund data for testing.\n    \n    This\
-        \ endpoint adds a set of predefined mutual funds to the database\n    if they\
-        \ don't already exist."
       tags:
       - system
+      summary: Initialize Data
+      description: 'Initialize sample mutual fund data for testing.
+
+
+        This endpoint adds a set of predefined mutual funds to the database
+
+        if they don''t already exist.'
+      operationId: initialize_data_initialize_sample_data_post
       responses:
         '200':
-          description: Successful response
-  /investments/:
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /investments/investments/:
     post:
-      summary: Create a new investment for the user.
-      description: "Create a new investment for the user.\n    \n    Takes investment\
-        \ details and creates a new investment record."
       tags:
       - investments
+      summary: Create Investment
+      description: 'Create a new investment for the user.
+
+
+        Takes investment details and creates a new investment record.'
+      operationId: create_investment_investments__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvestmentCreate'
+        required: true
       responses:
         '200':
-          description: Successful response
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvestmentResponse'
-  /portfolio/investments:
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /investments/portfolio/investments:
     get:
-      summary: Get detailed list of user's investments.
-      description: "Get detailed list of user's investments.\n    \n    Returns a\
-        \ list of all investments in the user's portfolio with calculated\n    returns\
-        \ and current values."
       tags:
       - portfolio
+      summary: Get Portfolio Investments
+      description: 'Get detailed list of user''s investments.
+
+
+        Returns a list of all investments in the user''s portfolio with calculated
+
+        returns and current values.'
+      operationId: get_portfolio_investments_portfolio_investments_get
       responses:
         '200':
-          description: Successful response
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PortfolioInvestmentList'
-  /portfolio/analytics:
+      security:
+      - OAuth2PasswordBearer: []
+  /investments/portfolio/analytics:
     get:
-      summary: Get comprehensive portfolio analytics including summary and investments.
-      description: "Get comprehensive portfolio analytics including summary and investments.\n\
-        \    \n    This endpoint combines portfolio summary and detailed investment\
-        \ information\n    in a single response for a complete portfolio overview."
       tags:
       - portfolio
+      summary: Get Portfolio Analytics
+      description: 'Get detailed portfolio analytics.
+
+
+        Returns portfolio summary and detailed investment information.'
+      operationId: get_portfolio_analytics_portfolio_analytics_get
       responses:
         '200':
-          description: Successful response
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PortfolioAnalytics'
-  /investments/update-navs:
+      security:
+      - OAuth2PasswordBearer: []
+  /investments/investments/update-navs:
     post:
-      summary: Update current NAVs and values for all investments.
-      description: "Update current NAVs and values for all investments.\n    \n  \
-        \  This endpoint recalculates the current value of all investments\n    based\
-        \ on the latest NAV data. In a production environment,\n    this would fetch\
-        \ real-time NAV data from an external API."
       tags:
       - investments
+      summary: Update Investment Navs
+      description: 'Update current NAVs and values for all investments.
+
+
+        This endpoint recalculates the current value of all investments
+
+        based on the latest NAV data. In a production environment,
+
+        this would fetch real-time NAV data from an external API.'
+      operationId: update_investment_navs_investments_update_navs_post
       responses:
         '200':
-          description: Successful response
-  /health:
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+      security:
+      - OAuth2PasswordBearer: []
+  /investments/health:
     get:
-      summary: ''
-      description: null
-      tags: []
+      tags:
+      - system
+      summary: Health Check
+      description: 'Check if the service is healthy.
+
+
+        Returns a simple status message indicating the service is operational.'
+      operationId: health_check_health_get
       responses:
         '200':
-          description: Successful response
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /notifications/health:
+    get:
+      summary: Health Check
+      operationId: health_check_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /notifications/:
+    get:
+      summary: Root
+      operationId: root__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /kyc/health:
+    get:
+      summary: Health Check
+      operationId: health_check_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /kyc/:
+    get:
+      summary: Root
+      operationId: root__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /admin/health:
+    get:
+      tags:
+      - system
+      summary: Health Check
+      operationId: health_check_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /admin/:
+    get:
+      tags:
+      - system
+      summary: Root
+      operationId: root__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /transactions/health:
+    get:
+      tags:
+      - system
+      summary: Health Check
+      operationId: health_check_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /transactions/:
+    get:
+      tags:
+      - system
+      summary: Root
+      operationId: root__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /:
+    get:
+      tags:
+      - system
+      summary: Root
+      description: 'Root endpoint that provides basic service information.
+
+
+        Returns service name, version, and status.'
+      operationId: root__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
   /register:
     post:
-      summary: Register a new user.
-      description: "Register a new user.\n    \n    Creates a new user account with\
-        \ the provided details and optionally returns\n    an access token for immediate\
-        \ authentication."
       tags:
       - users
+      summary: Register User
+      description: 'Register a new user.
+
+
+        Creates a new user account with the provided details and optionally returns
+
+        an access token for immediate authentication.'
+      operationId: register_user_register_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+        required: true
       responses:
         '201':
-          description: Successful response
+          description: Successful Response
           content:
             application/json:
               schema:
@@ -124,62 +328,109 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserCreate'
-  /token:
-    post:
-      summary: Authenticate a user and return an access token.
-      description: "Authenticate a user and return an access token.\n    \n    Validates\
-        \ the user's credentials and returns a JWT token along with the user's profile."
-      tags:
-      - auth
-      responses:
-        '200':
-          description: Successful response
+        '422':
+          description: Validation Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginResponse'
+                $ref: '#/components/schemas/HTTPValidationError'
+  /token:
+    post:
+      tags:
+      - auth
+      summary: Create access token
+      description: "OAuth2 compatible token login, get an access token for future\
+        \ requests.\n    \n    Form Parameters:\n    - **username**: Email address\n\
+        \    - **password**: Account password\n    - **scope**: Space-separated list\
+        \ of requested scopes (optional)\n    - **grant_type**: OAuth2 grant type,\
+        \ defaults to \"password\" (optional)"
+      operationId: login_token_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_login_token_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
         '401':
           description: Invalid credentials
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /users/me:
-    get:
-      summary: Get the current authenticated user's profile.
-      description: "Get the current authenticated user's profile.\n    \n    Returns\
-        \ the complete profile information of the currently logged-in user."
-      tags:
-      - users
-      responses:
-        '200':
-          description: Successful response
+        '422':
+          description: Validation Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserSchema'
+                $ref: '#/components/schemas/HTTPValidationError'
+  /users/me:
+    get:
+      tags:
+      - users
+      summary: Get Current User
+      description: 'Get the current authenticated user''s profile.
+
+
+        Returns the complete profile information of the currently logged-in user.'
+      operationId: get_current_user_users_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
         '401':
           description: Invalid authentication token
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - OAuth2PasswordBearer: []
   /users:
     get:
-      summary: Get a list of all users (admin only).
-      description: "Get a list of all users (admin only).\n    \n    Returns a paginated\
-        \ list of user profiles. Only accessible by administrators."
       tags:
       - users
+      summary: List Users
+      description: 'Get a list of all users (admin only).
+
+
+        Returns a paginated list of user profiles. Only accessible by administrators.'
+      operationId: list_users_users_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: skip
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 0
+          title: Skip
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 100
+          title: Limit
       responses:
         '200':
-          description: Successful response
+          description: Successful Response
           content:
             application/json:
               schema:
@@ -190,354 +441,510 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /gateway/:
+    get:
+      summary: Root
+      description: Root endpoint that provides basic service information.
+      operationId: root__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /gateway/health:
+    get:
+      summary: Health Check
+      description: Check if the service is healthy.
+      operationId: health_check_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
 components:
   schemas:
-    MutualFundBase:
-      type: object
+    FundCategory:
+      type: string
+      enum:
+      - equity
+      - debt
+      - hybrid
+      - liquid
+      - index
+      title: FundCategory
+    HTTPValidationError:
       properties:
-        scheme_code: &id001
-          type: string
-        scheme_name: &id002
-          type: string
-        category: &id003
-          $ref: '#/components/schemas/FundCategory'
-        nav: &id004
-          type: number
-        aum: &id005
-          type: number
-        risk_level: &id006
-          type: string
-        expense_ratio: &id007
-          type: number
-      description: ''
-    MutualFundCreate:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
       type: object
-      properties:
-        scheme_code: *id001
-        scheme_name: *id002
-        category: *id003
-        nav: *id004
-        aum: *id005
-        risk_level: *id006
-        expense_ratio: *id007
-      description: ''
-    MutualFundResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-        last_updated:
-          type: string
-          format: date-time
-        scheme_code: *id001
-        scheme_name: *id002
-        category: *id003
-        nav: *id004
-        aum: *id005
-        risk_level: *id006
-        expense_ratio: *id007
-      description: ''
-    InvestmentBase:
-      type: object
-      properties:
-        fund_id: &id008
-          type: integer
-        purchase_amount: &id009
-          type: number
-      description: ''
+      title: HTTPValidationError
     InvestmentCreate:
-      type: object
       properties:
-        fund_id: *id008
-        purchase_amount: *id009
-      description: ''
-    InvestmentResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-        user_id:
-          type: integer
         fund_id:
           type: integer
-        units:
-          type: number
-        purchase_nav:
-          type: number
-        current_nav:
-          type: number
+          title: Fund Id
         purchase_amount:
           type: number
-        current_value:
-          type: number
-        purchase_date:
-          type: string
-          format: date-time
-        status:
-          $ref: '#/components/schemas/InvestmentStatus'
-      description: ''
-    PortfolioInvestment:
+          exclusiveMinimum: 0.0
+          title: Purchase Amount
       type: object
+      required:
+      - fund_id
+      - purchase_amount
+      title: InvestmentCreate
+    InvestmentResponse:
       properties:
         id:
           type: integer
-        fund_name:
-          type: string
-        category:
-          $ref: '#/components/schemas/FundCategory'
+          title: Id
+        user_id:
+          type: integer
+          title: User Id
+        fund_id:
+          type: integer
+          title: Fund Id
         units:
           type: number
+          title: Units
         purchase_nav:
           type: number
+          title: Purchase Nav
         current_nav:
           type: number
+          title: Current Nav
         purchase_amount:
           type: number
+          title: Purchase Amount
         current_value:
           type: number
-        returns:
-          type: number
-        returns_percentage:
-          type: number
+          title: Current Value
         purchase_date:
           type: string
           format: date-time
-      description: ''
-    PortfolioInvestmentList:
+          title: Purchase Date
+        status:
+          $ref: '#/components/schemas/InvestmentStatus'
       type: object
+      required:
+      - id
+      - user_id
+      - fund_id
+      - units
+      - purchase_nav
+      - current_nav
+      - purchase_amount
+      - current_value
+      - purchase_date
+      - status
+      title: InvestmentResponse
+    InvestmentStatus:
+      type: string
+      enum:
+      - pending
+      - completed
+      - failed
+      - cancelled
+      title: InvestmentStatus
+    MessageResponse:
       properties:
-        investments:
-          type: array
-          items:
-            $ref: '#/components/schemas/PortfolioInvestment'
-      description: A list of portfolio investments.
-    PortfolioSummary:
-      type: object
-      properties:
-        total_investment:
-          type: number
-        current_value:
-          type: number
-        total_returns:
-          type: number
-        returns_percentage:
-          type: number
-        number_of_investments:
-          type: integer
-        asset_allocation:
+        message:
           type: string
-      description: ''
-    PortfolioAnalytics:
+          title: Message
+        service:
+          type: string
+          title: Service
+        version:
+          type: string
+          title: Version
+        status:
+          type: string
+          title: Status
       type: object
+      required:
+      - message
+      - service
+      - version
+      - status
+      title: MessageResponse
+      description: A simple message response schema.
+    PortfolioAnalytics:
       properties:
         summary:
           $ref: '#/components/schemas/PortfolioSummary'
         investments:
-          type: array
           items:
             $ref: '#/components/schemas/PortfolioInvestment'
-      description: ''
-    InvestmentFilter:
+          type: array
+          title: Investments
       type: object
-      properties:
-        category:
-          $ref: '#/components/schemas/FundCategory'
-        min_amount:
-          type: number
-          nullable: true
-        max_amount:
-          type: number
-          nullable: true
-        start_date:
-          type: string
-          nullable: true
-          format: date-time
-        end_date:
-          type: string
-          nullable: true
-          format: date-time
-      description: ''
-    UserBase:
-      type: object
-      properties:
-        email: &id010
-          type: string
-          format: email
-          description: User
-          required: true
-        full_name: &id011
-          type: string
-          description: User
-          required: true
-        role: &id012
-          type: string
-          enum:
-          - ADMIN
-          - CUSTOMER
-          description: User
-      description: Base user schema with common fields.
       required:
-      - email
-      - full_name
-    UserCreate:
-      type: object
-      properties:
-        password:
-          type: string
-          description: User
-          minLength: 8
-          required: true
-        email: *id010
-        full_name: *id011
-        role: *id012
-      description: Schema for user registration request.
-      required:
-      - password
-      - email
-      - full_name
-    User:
-      type: object
+      - summary
+      - investments
+      title: PortfolioAnalytics
+    PortfolioInvestment:
       properties:
         id:
           type: integer
-          description: User
-          required: true
-        is_active:
-          type: boolean
-          description: Whether the user account is active
-          required: true
-        created_at:
+          title: Id
+        fund_name:
+          type: string
+          title: Fund Name
+        category:
+          $ref: '#/components/schemas/FundCategory'
+        units:
+          type: number
+          title: Units
+        purchase_nav:
+          type: number
+          title: Purchase Nav
+        current_nav:
+          type: number
+          title: Current Nav
+        purchase_amount:
+          type: number
+          title: Purchase Amount
+        current_value:
+          type: number
+          title: Current Value
+        returns:
+          type: number
+          title: Returns
+        returns_percentage:
+          type: number
+          title: Returns Percentage
+        purchase_date:
           type: string
           format: date-time
-          description: When the user account was created
-          required: true
-        email: *id010
-        full_name: *id011
-        role: *id012
-      description: Schema for user response.
+          title: Purchase Date
+      type: object
       required:
       - id
-      - is_active
-      - created_at
-      - email
-      - full_name
-    LoginRequest:
+      - fund_name
+      - category
+      - units
+      - purchase_nav
+      - current_nav
+      - purchase_amount
+      - current_value
+      - returns
+      - returns_percentage
+      - purchase_date
+      title: PortfolioInvestment
+    PortfolioInvestmentList:
+      properties:
+        investments:
+          items:
+            $ref: '#/components/schemas/PortfolioInvestment'
+          type: array
+          title: Investments
       type: object
+      required:
+      - investments
+      title: PortfolioInvestmentList
+      description: A list of portfolio investments.
+    PortfolioSummary:
+      properties:
+        total_investment:
+          type: number
+          title: Total Investment
+        current_value:
+          type: number
+          title: Current Value
+        total_returns:
+          type: number
+          title: Total Returns
+        returns_percentage:
+          type: number
+          title: Returns Percentage
+        number_of_investments:
+          type: integer
+          title: Number Of Investments
+        asset_allocation:
+          additionalProperties:
+            type: number
+          type: object
+          title: Asset Allocation
+      type: object
+      required:
+      - total_investment
+      - current_value
+      - total_returns
+      - returns_percentage
+      - number_of_investments
+      - asset_allocation
+      title: PortfolioSummary
+    ValidationError:
+      properties:
+        loc:
+          items:
+            type: string
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+      example:
+        loc:
+        - body
+        - username
+        msg: field required
+        type: value_error.missing
+    Body_login_token_post:
+      properties:
+        grant_type:
+          anyOf:
+          - type: string
+            pattern: password
+          - type: 'null'
+          title: Grant Type
+        username:
+          type: string
+          title: Username
+        password:
+          type: string
+          title: Password
+        scope:
+          type: string
+          title: Scope
+          default: ''
+        client_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Client Id
+        client_secret:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Client Secret
+      type: object
+      required:
+      - username
+      - password
+      title: Body_login_token_post
+    ErrorResponse:
+      title: ErrorResponse
+      type: object
+      properties:
+        error:
+          type: string
+          title: Error
+          description: Error message
+        detail:
+          type: string
+          nullable: true
+          title: Detail
+          description: Additional error details
+      required:
+      - error
+      description: Schema for error response
+      example:
+        error: Invalid authentication token
+        detail: null
+    RegisterResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+          description: JWT access token if auto-login is enabled
+          nullable: true
+        user:
+          $ref: '#/components/schemas/User'
+          description: Created user details
+      type: object
+      required:
+      - user
+      title: RegisterResponse
+      description: Schema for successful registration response.
+    Role:
+      type: string
+      enum:
+      - admin
+      - customer
+      - distributor
+      title: Role
+    TokenResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+          description: JWT access token
+        token_type:
+          type: string
+          title: Token Type
+          description: Token type
+          default: bearer
+        expires_in:
+          type: integer
+          title: Expires In
+          description: Token expiration in seconds
+          default: 3600
+        scope:
+          type: string
+          title: Scope
+          description: Space-separated list of granted scopes
+          default: ''
+        user:
+          $ref: '#/components/schemas/UserBase'
+          description: User profile information
+      type: object
+      required:
+      - access_token
+      - user
+      title: TokenResponse
+      description: OAuth2 compatible token response.
+    User:
       properties:
         email:
           type: string
           format: email
-          description: User
-          required: true
-        password:
+          title: Email
+          description: User's email address
+        full_name:
           type: string
-          description: User
-          required: true
-      description: Schema for login request.
+          title: Full Name
+          description: User's full name
+        role:
+          $ref: '#/components/schemas/Role'
+          description: User's role in the system
+          default: customer
+        id:
+          type: integer
+          title: Id
+          description: User's unique identifier
+        is_active:
+          type: boolean
+          title: Is Active
+          description: Whether the user account is active
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the user account was created
+      type: object
       required:
       - email
+      - full_name
+      - id
+      - is_active
+      - created_at
+      title: User
+      description: Schema for user response.
+      example:
+        created_at: '2025-03-26T23:36:59.449495'
+        email: test@example.com
+        full_name: Test User
+        id: 1
+        is_active: true
+        role: customer
+    UserBase:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+          description: User's email address
+        full_name:
+          type: string
+          title: Full Name
+          description: User's full name
+        role:
+          $ref: '#/components/schemas/Role'
+          description: User's role in the system
+          default: customer
+      type: object
+      required:
+      - email
+      - full_name
+      title: UserBase
+      description: Base user schema with common fields.
+    UserCreate:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+          description: User's email address
+        full_name:
+          type: string
+          title: Full Name
+          description: User's full name
+        role:
+          $ref: '#/components/schemas/Role'
+          description: User's role in the system
+          default: customer
+        password:
+          type: string
+          minLength: 8
+          title: Password
+          description: User's password
+      type: object
+      required:
+      - email
+      - full_name
       - password
-    LoginResponse:
-      type: object
-      properties:
-        access_token:
-          type: string
-          description: JWT access token
-          required: true
-        token_type:
-          type: string
-          description: Token type
-        user:
-          $ref: '#/components/schemas/User'
-          description: User details
-          required: true
-      description: Schema for successful login response.
-      required:
-      - access_token
-      - user
-    RegisterResponse:
-      type: object
-      properties:
-        access_token:
-          type: string
-          nullable: true
-          description: JWT access token if auto-login is enabled
-        user:
-          $ref: '#/components/schemas/User'
-          description: Created user details
-          required: true
-      description: Schema for successful registration response.
-      required:
-      - user
+      title: UserCreate
+      description: Schema for user registration request.
     UserList:
-      type: object
       properties:
         users:
-          type: array
           items:
             $ref: '#/components/schemas/User'
+          type: array
+          title: Users
           description: List of users
-          required: true
         total:
           type: integer
+          title: Total
           description: Total number of users
-          required: true
         skip:
           type: integer
+          title: Skip
           description: Number of users skipped
-          required: true
         limit:
           type: integer
+          title: Limit
           description: Maximum number of users returned
-          required: true
-      description: Schema for list of users response.
+      type: object
       required:
       - users
       - total
       - skip
       - limit
-    ErrorResponse:
-      type: object
-      properties:
-        detail:
-          type: string
-          description: Error message
-          required: true
-        status_code:
-          type: integer
-          description: HTTP status code
-          required: true
-        error_type:
-          type: string
-          description: Type of error
-          required: true
-      description: Schema for error responses.
-      required:
-      - detail
-      - status_code
-      - error_type
-    Token:
-      type: object
-      properties:
-        access_token:
-          type: string
-          description: JWT access token
-          required: true
-        token_type:
-          type: string
-          description: Token type
-      description: Schema for JWT token response.
-      required:
-      - access_token
+      title: UserList
+      description: Schema for list of users response.
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-tags:
-- name: portfolio
-  description: Operations related to investment portfolios
-- name: investments
-  description: Operations for managing individual investments
-- name: system
-  description: System maintenance operations
+    OAuth2PasswordBearer:
+      type: oauth2
+      flows:
+        password:
+          scopes: {}
+          tokenUrl: token
